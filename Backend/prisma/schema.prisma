@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -12,12 +6,181 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-} 
+}
 
-// create a model for the User table
+enum Role {
+  CITIZEN
+  AUTHORITY
+  ADMIN
+}
+
+enum ReportStatus {
+  SUBMITTED
+  PENDING_AUTHORITY
+  VERIFIED
+  REJECTED
+  RESOLVED
+  CLOSED
+}
+
+enum AIProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AuthorityActionType {
+  VERIFIED
+  REJECTED
+  RESOLVED
+  CLOSED
+}
+
+enum DocumentType {
+  VERIFIED_REPORT
+  SOP
+  INCIDENT_HISTORY
+  RESOLUTION_NOTE
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())  
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  password     String
+  phone        String?
+  profileImage String?
+
+  role Role @default(CITIZEN)
+
+  reports          Report[] @relation("CitizenReports")
+  authorityReports Report[] @relation("AssignedAuthority")
+  authorityActions AuthorityAction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+}
+
+model Report {
+  id           String @id @default(cuid())
+  reportNumber String @unique
+
+  title       String
+  description String
+
+  status ReportStatus @default(SUBMITTED)
+
+  latitude     Float
+  longitude    Float
+  locationName String?
+
+  citizenId String
+  citizen   User @relation("CitizenReports", fields: [citizenId], references: [id])
+
+  currentAuthorityId String?
+  currentAuthority   User? @relation("AssignedAuthority", fields: [currentAuthorityId], references: [id])
+
+  images ReportImage[]
+
+  intelligence IncidentIntelligence?
+
+  authorityActions AuthorityAction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([citizenId])
+  @@index([currentAuthorityId])
+}
+
+model ReportImage {
+  id String @id @default(cuid())
+
+  reportId String
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  url String
+
+  publicId String
+
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+}
+
+model IncidentIntelligence {
+  id String @id @default(cuid())
+
+  reportId String @unique
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  processingStatus AIProcessingStatus @default(PENDING)
+
+  hazardType String?
+
+  summary String?
+
+  confidence Float?
+
+  priorityScore Int?
+
+  recommendation String?
+
+  reasoning String?
+
+  duplicateReports Json?
+
+  socialEvidence Json?
+
+  historicalContext Json?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@index([processingStatus])
+
+  @@index([priorityScore])
+}
+
+model AuthorityAction {
+  id String @id @default(cuid())
+
+  reportId String
+
+  authorityId String
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  authority User @relation(fields: [authorityId], references: [id])
+
+  action AuthorityActionType
+
+  remarks String?
+
+  createdAt DateTime @default(now())
+
+  @@index([reportId])
+
+  @@index([authorityId])
+}
+
+model KnowledgeDocument {
+  id String @id @default(cuid())
+
+  type DocumentType
+
+  sourceId String?
+
+  title String
+
+  content String
+
+  createdAt DateTime @default(now())
 }
