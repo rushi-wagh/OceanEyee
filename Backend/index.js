@@ -3,6 +3,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { connectDb } from "./src/utils/db.js";
+import authRouter from "./src/routes/auth.route.js";
+import { errorHandler } from "./src/middlewares/error.middleware.js";
 
 dotenv.config();
 
@@ -15,7 +17,10 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/api/v1/health",(req,res) => {
     res.status(200).json({message: "Server is running"});
 })
-// import connectDB from "./src/utils/db.js";
+
+app.use("/api/auth", authRouter);
+
+app.use(errorHandler);
  
 
 
