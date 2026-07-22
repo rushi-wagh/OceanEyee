@@ -3,7 +3,7 @@ import { prisma } from "../utils/db.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-const authenticate = asyncHandler(async (req, res, next) => {
+const isLoggedIn = asyncHandler(async (req, res, next) => {
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.replace("Bearer ", "") : req.cookies?.token;
 
@@ -25,7 +25,7 @@ const authenticate = asyncHandler(async (req, res, next) => {
   next();
 });
 
-const authorize = (...roles) => {
+const isAllowed = (...roles) => {
   return (req, res, next) => {
     const allowedRoles = roles.map((role) => role.toUpperCase());
 
@@ -37,4 +37,4 @@ const authorize = (...roles) => {
   };
 };
 
-export { authenticate, authorize };
+export { isLoggedIn, isAllowed };

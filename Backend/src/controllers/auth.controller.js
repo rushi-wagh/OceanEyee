@@ -25,21 +25,31 @@ const removePassword = (user) => {
 
 const register = asyncHandler(async (req, res) => {
   const { name, email, password, phone, role } = req.body;
+  const userName = name?.trim();
+  const userEmail = email?.trim().toLowerCase();
 
-  if (!name || !email || !password) {
-    throw new ApiError(400, "Name, email and password are required");
+  if (!userName || !userEmail || !password) {
+    throw new ApiError(401, "Name, email and password are required");
+  }
+
+  if (!userEmail.includes("@")) {
+    throw new ApiError(401, "Valid email is required");
+  }
+
+  if (password.length < 6) {
+    throw new ApiError(401, "Password must be at least 6 characters");
   }
 
   const allowedRoles = ["CITIZEN", "AUTHORITY", "ADMIN"];
-  const userRole = role ? role.toUpperCase() : "CITIZEN";
+  const userRole = role ? role.trim().toUpperCase() : "CITIZEN";
 
   if (!allowedRoles.includes(userRole)) {
-    throw new ApiError(400, "Invalid role");
+    throw new ApiError(401, "Invalid role");
   }
 
   const existedUser = await prisma.user.findUnique({
     where: {
-      email: email.toLowerCase(),
+      email: userEmail,
     },
   });
 
@@ -51,8 +61,8 @@ const register = asyncHandler(async (req, res) => {
 
   const user = await prisma.user.create({
     data: {
-      name,
-      email: email.toLowerCase(),
+      name: userName,
+      email: userEmail,
       password: hashedPassword,
       phone,
       role: userRole,
@@ -62,27 +72,24 @@ const register = asyncHandler(async (req, res) => {
   const token = generateToken(user);
 
   return res.status(201).json(
-    new ApiResponse(
-      201,
-      {
-        user: removePassword(user),
-        token,
-      },
-      "User registered successfully"
-    )
+    new ApiResponse(201, "User registered successfully", {
+      user: removePassword(user),
+      token,
+    })
   );
 });
 
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+  const userEmail = email?.trim().toLowerCase();
 
-  if (!email || !password) {
-    throw new ApiError(400, "Email and password are required");
+  if (!userEmail || !password) {
+    throw new ApiError(401, "Email and password are required");
   }
 
   const user = await prisma.user.findUnique({
     where: {
-      email: email.toLowerCase(),
+      email: userEmail,
     },
   });
 
@@ -99,27 +106,30 @@ const login = asyncHandler(async (req, res) => {
   const token = generateToken(user);
 
   return res
-  .cookie("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  })
-  .status(200).json(
-    new ApiResponse(
-      200,
-      {
+    .cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
+    .status(200)
+    .json(
+      new ApiResponse(200, "User logged in successfully", {
         user: removePassword(user),
-      },
-      "User logged in successfully"
-    )
-  );
+      })
+    );
 });
 
 const me = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  if (!userId) {
+    throw new ApiError(401, "User ID is required");
+  }
+
   const user = await prisma.user.findUnique({
     where: {
-      id: req.user.id,
+      id: userId,
     },
   });
 
@@ -127,13 +137,21 @@ const me = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
-  return res.status(200).json(new ApiResponse(200, { user: removePassword(user) }, "User fetched successfully"));
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, "User fetched successfully", {
+        user: removePassword(user),
+      })
+    );
 });
-
 
 const logout = asyncHandler(async (req, res) => {
   res.clearCookie("token");
-  return res.status(200).json(new ApiResponse(200, null, "User logged out successfully"));
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "User logged out successfully", null));
 });
 
 export { login, me, register, logout };
