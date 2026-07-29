@@ -11,9 +11,9 @@ const generateToken = (user) => {
       id: user.id,
       role: user.role,
     },
-    process.env.JWT_SECRET || "change-this-secret",
+    process.env.JWT_SECRET ,
     {
-      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+      expiresIn: process.env.JWT_EXPIRES_IN ,
     }
   );
 };
@@ -24,7 +24,7 @@ const removePassword = (user) => {
 };
 
 const register = asyncHandler(async (req, res) => {
-  const { name, email, password, phone, role } = req.body;
+  const { name, email, password, phone} = req.body;
   const userName = name?.trim();
   const userEmail = email?.trim().toLowerCase();
 
@@ -40,12 +40,7 @@ const register = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Password must be at least 6 characters");
   }
 
-  const allowedRoles = ["CITIZEN", "AUTHORITY", "ADMIN"];
-  const userRole = role ? role.trim().toUpperCase() : "CITIZEN";
-
-  if (!allowedRoles.includes(userRole)) {
-    throw new ApiError(401, "Invalid role");
-  }
+ 
 
   const existedUser = await prisma.user.findUnique({
     where: {
@@ -56,6 +51,17 @@ const register = asyncHandler(async (req, res) => {
   if (existedUser) {
     throw new ApiError(409, "User already exists");
   }
+  const existing = await prisma.user.findUnique({
+  where: {
+    phone,
+  },
+});
+
+if (existing) {
+  return res.status(409).json({
+    message: "Phone number already registered",
+  });
+}
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -65,16 +71,20 @@ const register = asyncHandler(async (req, res) => {
       email: userEmail,
       password: hashedPassword,
       phone,
-      role: userRole,
     },
   });
 
   const token = generateToken(user);
 
-  return res.status(201).json(
+  return res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  })
+  .status(201).json(
     new ApiResponse(201, "User registered successfully", {
       user: removePassword(user),
-      token,
     })
   );
 });

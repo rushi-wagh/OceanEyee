@@ -49,7 +49,7 @@ model User {
   name         String
   email        String   @unique
   password     String
-  phone        String?
+  phone        String?  @unique 
   profileImage String?
 
   role Role @default(CITIZEN)
