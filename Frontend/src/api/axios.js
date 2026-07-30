@@ -9,4 +9,21 @@ const api = axios.create({
   },
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "Something went wrong. Please try again.";
+
+    return Promise.reject({
+      message,
+      statusCode: error.response?.status,
+      errors: error.response?.data?.errors || [],
+      originalError: error,
+    });
+  }
+);
+
 export { api };
