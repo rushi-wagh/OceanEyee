@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 
 function DashboardStub({ title }) {
+  console.log("[DEV] DashboardStub rendered", title);
   const { user, logout } = useAuth();
 
   return (
