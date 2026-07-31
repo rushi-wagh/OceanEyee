@@ -4,6 +4,7 @@ import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import LoginPage from "@/features/auth/LoginPage";
 import RegisterPage from "@/features/auth/RegisterPage";
 import { DashboardStub } from "@/features/auth/DashboardStub";
+import CitizenDashboard from "@/features/citizen/CitizenDashboard";
 import LandingPage from "@/features/landing/LandingPage";
 
 const router = createBrowserRouter([
@@ -29,7 +30,7 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <DashboardStub title="Citizen Dashboard" />,
+            element: <CitizenDashboard />,
           },
         ],
       },
