@@ -1,4 +1,3 @@
-import React from "react";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import DashboardMockup from "./components/DashboardMockup";
@@ -10,7 +9,7 @@ import MapPreview from "./components/MapPreview";
 import FAQ from "./components/FAQ";
 import Footer from "./components/Footer";
 
-function LandingPage() {
+const LandingPage = () => {
   return (
     <div className="min-h-screen bg-background text-slate-100 bg-grid-pattern relative overflow-hidden">
       {/* Background glow radial effects */}
@@ -29,6 +28,6 @@ function LandingPage() {
       <Footer />
     </div>
   );
-}
+};
 
 export default LandingPage;

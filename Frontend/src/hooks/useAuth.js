@@ -1,4 +1,4 @@
-import { useAuthContext } from "@/app/providers/AuthProvider";
+import { useAuthContext } from "@/app/providers/authContext";
 
 const useAuth = () => {
   return useAuthContext();

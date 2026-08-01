@@ -1,7 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 
-function DashboardStub({ title }) {
-  console.log("[DEV] DashboardStub rendered", title);
+const DashboardStub = ({ title }) => {
   const { user, logout } = useAuth();
 
   return (
@@ -19,6 +18,6 @@ function DashboardStub({ title }) {
       </div>
     </main>
   );
-}
+};
 
 export { DashboardStub };

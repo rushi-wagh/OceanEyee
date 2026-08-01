@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { registerUser } from "@/api/auth.api";
-import { showToast } from "@/components/ui/Toast";
+import { showToast } from "@/components/ui/showToast";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { zodResolver } from "@/lib/zodResolver";
@@ -23,7 +23,7 @@ const getDashboardPath = (role) => {
   return "/citizen";
 };
 
-function RegisterPage() {
+const RegisterPage = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading, refetch } = useAuth();
 

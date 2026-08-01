@@ -1,6 +1,6 @@
-import { Toaster, toast } from "sonner";
+import { Toaster } from "sonner";
 
-function ToastProvider() {
+const ToastProvider = () => {
   return (
     <Toaster
       richColors
@@ -15,12 +15,6 @@ function ToastProvider() {
       }}
     />
   );
-}
-
-const showToast = {
-  success: toast.success,
-  error: toast.error,
-  info: toast.info,
 };
 
-export { showToast, ToastProvider };
+export { ToastProvider };

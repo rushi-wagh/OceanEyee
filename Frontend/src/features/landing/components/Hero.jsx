@@ -1,8 +1,7 @@
-import React from "react";
 import { motion } from "framer-motion";
 import { ChevronRight, ShieldCheck, MapPin, Activity } from "lucide-react";
 
-function Hero() {
+const Hero = () => {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -129,6 +128,6 @@ function Hero() {
       </div>
     </section>
   );
-}
+};
 
 export default Hero;

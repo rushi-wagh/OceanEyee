@@ -1,11 +1,9 @@
-import { createContext, useContext } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentUser, logoutUser } from "@/api/auth.api";
-import { showToast } from "@/components/ui/Toast";
+import { AuthContext } from "@/app/providers/authContext";
+import { showToast } from "@/components/ui/showToast";
 
-const AuthContext = createContext(null);
-
-function AuthProvider({ children }) {
+const AuthProvider = ({ children }) => {
   const queryClient = useQueryClient();
 
   const {
@@ -45,16 +43,6 @@ function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-const useAuthContext = () => {
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error("useAuth must be used inside AuthProvider");
-  }
-
-  return context;
 };
 
-export { AuthProvider, useAuthContext };
+export { AuthProvider };

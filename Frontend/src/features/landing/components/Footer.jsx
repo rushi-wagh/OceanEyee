@@ -1,7 +1,6 @@
-import React from "react";
 import { Eye, Shield, ArrowUpRight } from "lucide-react";
 
-function Footer() {
+const Footer = () => {
   return (
     <footer className="relative pt-24 pb-12 px-6 bg-[#02050c] border-t border-white/5 overflow-hidden">
       {/* Background glow decorator */}
@@ -130,6 +129,6 @@ function Footer() {
       </div>
     </footer>
   );
-}
+};
 
 export default Footer;

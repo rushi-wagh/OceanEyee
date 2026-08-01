@@ -3,15 +3,15 @@ import { AuthProvider } from "@/app/providers/AuthProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { queryClient } from "@/lib/queryClient";
 
-function Providers({ children }) {
+const Providers = ({ children }) => {
   return (
     <QueryClientProvider client={queryClient}>
+      <ToastProvider />
       <AuthProvider>
         {children}
-        <ToastProvider />
       </AuthProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export { Providers };

@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 
-function ProtectedRoute({ allowedRoles }) {
+const ProtectedRoute = ({ allowedRoles }) => {
   const location = useLocation();
   const { user, isAuthenticated, isLoading } = useAuth();
 
@@ -25,6 +25,6 @@ function ProtectedRoute({ allowedRoles }) {
   }
 
   return <Outlet />;
-}
+};
 
 export { ProtectedRoute };

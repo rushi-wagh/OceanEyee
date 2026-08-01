@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, HelpCircle } from "lucide-react";
 
@@ -21,7 +21,7 @@ const FAQ_ITEMS = [
   }
 ];
 
-function FAQ() {
+const FAQ = () => {
   const [openIdx, setOpenIdx] = useState(null);
 
   const toggleFAQ = (idx) => {
@@ -88,6 +88,6 @@ function FAQ() {
       </div>
     </section>
   );
-}
+};
 
 export default FAQ;

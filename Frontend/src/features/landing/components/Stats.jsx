@@ -1,4 +1,3 @@
-import React from "react";
 import { motion } from "framer-motion";
 import { Send, CheckCircle2, Shield, Activity, Anchor } from "lucide-react";
 
@@ -45,7 +44,7 @@ const STATS_DATA = [
   }
 ];
 
-function Stats() {
+const Stats = () => {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -116,6 +115,6 @@ function Stats() {
       </div>
     </section>
   );
-}
+};
 
 export default Stats;

@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Shield, Clock, AlertTriangle, CheckCircle, ExternalLink, Calendar } from "lucide-react";
+import { MapPin, Clock } from "lucide-react";
 
 const MOCK_REPORTS = [
   {
@@ -46,7 +46,7 @@ const MOCK_REPORTS = [
   }
 ];
 
-function DashboardMockup() {
+const DashboardMockup = () => {
   const [selectedId, setSelectedId] = useState("OE-1042");
   const selectedReport = MOCK_REPORTS.find((r) => r.id === selectedId);
 
@@ -217,6 +217,6 @@ function DashboardMockup() {
       </div>
     </section>
   );
-}
+};
 
 export default DashboardMockup;

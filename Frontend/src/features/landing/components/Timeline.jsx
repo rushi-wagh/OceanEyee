@@ -1,4 +1,3 @@
-import React from "react";
 import { motion } from "framer-motion";
 import { Landmark, Compass, ClipboardCheck, CheckCircle2 } from "lucide-react";
 
@@ -33,7 +32,7 @@ const STEPS = [
   }
 ];
 
-function Timeline() {
+const Timeline = () => {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -74,7 +73,7 @@ function Timeline() {
           {/* Connector Line (Desktop Only) */}
           <div className="hidden md:block absolute top-[44px] left-[5%] right-[5%] h-0.5 bg-gradient-to-r from-primary/30 via-accent/30 to-primary/30 z-0"></div>
 
-          {STEPS.map((step, idx) => {
+          {STEPS.map((step) => {
             const Icon = step.icon;
             return (
               <motion.div
@@ -108,6 +107,6 @@ function Timeline() {
       </div>
     </section>
   );
-}
+};
 
 export default Timeline;

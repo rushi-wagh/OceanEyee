@@ -1,4 +1,3 @@
-import React from "react";
 import { motion } from "framer-motion";
 import { MapPin, RefreshCw, Users, FileSpreadsheet } from "lucide-react";
 
@@ -37,7 +36,7 @@ const FEATURES_LIST = [
   }
 ];
 
-function Features() {
+const Features = () => {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -108,6 +107,6 @@ function Features() {
       </div>
     </section>
   );
-}
+};
 
 export default Features;

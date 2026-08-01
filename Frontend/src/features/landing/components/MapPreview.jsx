@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Info, Globe, ShieldAlert, CheckCircle } from "lucide-react";
+import { MapPin, Globe } from "lucide-react";
 
 const MAP_PINS = [
   {
@@ -32,7 +32,7 @@ const MAP_PINS = [
   }
 ];
 
-function MapPreview() {
+const MapPreview = () => {
   const [activePinId, setActivePinId] = useState("OE-128");
   const activePin = MAP_PINS.find((p) => p.id === activePinId);
 
@@ -166,6 +166,6 @@ function MapPreview() {
       </div>
     </section>
   );
-}
+};
 
 export default MapPreview;

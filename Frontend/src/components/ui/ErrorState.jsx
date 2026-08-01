@@ -1,6 +1,6 @@
 import { AlertCircle } from "lucide-react";
 
-function ErrorState({ message = "Something went wrong.", onRetry }) {
+const ErrorState = ({ message = "Something went wrong.", onRetry }) => {
   return (
     <div className="glass-panel card-glow rounded-2xl p-6 text-center">
       <AlertCircle className="mx-auto mb-4 h-8 w-8 text-red-300" aria-hidden="true" />
@@ -16,6 +16,6 @@ function ErrorState({ message = "Something went wrong.", onRetry }) {
       )}
     </div>
   );
-}
+};
 
 export { ErrorState };

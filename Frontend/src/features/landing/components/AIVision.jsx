@@ -1,4 +1,3 @@
-import React from "react";
 import { motion } from "framer-motion";
 import { BrainCircuit, Orbit, Compass, Sparkles } from "lucide-react";
 
@@ -26,7 +25,7 @@ const VISION_ITEMS = [
   }
 ];
 
-function AIVision() {
+const AIVision = () => {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -101,6 +100,6 @@ function AIVision() {
       </div>
     </section>
   );
-}
+};
 
 export default AIVision;
