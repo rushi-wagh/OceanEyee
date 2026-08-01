@@ -1,3 +1,14 @@
 export { api } from "./axios";
 export { getCurrentUser, loginUser, logoutUser, registerUser } from "./auth.api";
-export { createReport, getCitizenReports, uploadReportImages } from "./report.api";
+export {
+	closeReport,
+	createReport,
+	getCitizenReports,
+	getReport,
+	getReports,
+	rejectReport,
+	resolveReport,
+	uploadReportImages,
+	verifyReport,
+} from "./report.api";
+export { getAuthorityDashboard, getDashboard } from "./dashboard.api";

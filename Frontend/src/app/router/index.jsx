@@ -7,6 +7,8 @@ import { DashboardStub } from "@/features/auth/DashboardStub";
 import CreateReportPage from "@/features/citizen/CreateReportPage";
 import CitizenDashboard from "@/features/citizen/CitizenDashboard";
 import MyReportsPage from "@/features/citizen/MyReportsPage";
+import AuthorityDashboard from "@/features/authority/AuthorityDashboard";
+import ReportDetailsPage from "@/features/reports/ReportDetailsPage";
 import LandingPage from "@/features/landing/LandingPage";
 
 const router = createBrowserRouter([
@@ -62,7 +64,11 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <DashboardStub title="Authority Dashboard" />,
+            element: <AuthorityDashboard />,
+          },
+          {
+            path: "reports/:reportId",
+            element: <ReportDetailsPage variant="authority" />,
           },
         ],
       },

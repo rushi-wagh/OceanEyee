@@ -5,4 +5,9 @@ const getDashboard = async () => {
   return response.data;
 };
 
-export { getDashboard };
+const getAuthorityDashboard = async () => {
+  const response = await api.get("/api/dashboard");
+  return response.data;
+};
+
+export { getAuthorityDashboard, getDashboard };
