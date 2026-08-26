@@ -5,20 +5,24 @@ const createReport = async (data) => {
   return response.data;
 };
 
-const getReport = async (reportId) => {
-  const response = await api.get(`/api/reports/${reportId}`);
+const getReport = async (reportId, params = {}) => {
+  const response = await api.get(`/api/reports/${reportId}`, { params });
   return response.data;
 };
 
-const getCitizenReports = async () => {
-  const response = await api.get("/api/reports");
+const getCitizenReports = async (params = {}) => {
+  const response = await api.get("/api/reports", { params });
   return response.data;
 };
 
-const getReports = async () => {
-  const response = await api.get("/api/reports");
+const getReports = async (params = {}) => {
+  const response = await api.get("/api/reports", { params });
   return response.data;
 };
+
+const getCommunityReports = async () => getReports({ scope: "public" });
+
+const getCommunityReport = async (reportId) => getReport(reportId, { scope: "public" });
 
 const submitAuthorityAction = async (reportId, action, remarks) => {
   const response = await api.post(`/api/reports/${reportId}/actions/${action}`, {
@@ -52,6 +56,8 @@ const uploadReportImages = async (reportId, files) => {
 export {
   closeReport,
   createReport,
+  getCommunityReport,
+  getCommunityReports,
   getCitizenReports,
   getReport,
   getReports,

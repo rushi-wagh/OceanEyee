@@ -40,12 +40,13 @@ const create = asyncHandler(async (req, res) => {
 const getAll = asyncHandler(async (req, res) => {
   const user = req.user;
   const { status } = req.query;
+  const { scope } = req.query;
 
   if (!user) {
     throw new ApiError(401, "User is required");
   }
 
-  const reports = await getReports(user, status);
+  const reports = scope === "public" ? await getReports(user, status, scope) : await getReports(user, status);
 
   return res
     .status(200)
@@ -73,6 +74,7 @@ const getNearby = asyncHandler(async (req, res) => {
 const getOne = asyncHandler(async (req, res) => {
   const user = req.user;
   const { id: reportId } = req.params;
+  const { scope } = req.query;
 
   if (!user) {
     throw new ApiError(401, "User is required");
@@ -82,7 +84,7 @@ const getOne = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Report ID is required");
   }
 
-  const report = await getSingleReport(user, reportId);
+  const report = await getSingleReport(user, reportId, scope);
 
   return res
     .status(200)

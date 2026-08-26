@@ -106,6 +106,23 @@ const buildTimelineEntries = (report) => {
   return entries;
 };
 
+const getLatestAuthorityReview = (report) => {
+  const actions = Array.isArray(report?.authorityActions) ? [...report.authorityActions] : [];
+  const latestAction = actions
+    .filter((action) => action?.createdAt)
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())[0];
+
+  if (!latestAction?.action) {
+    return null;
+  }
+
+  if (!["VERIFIED", "REJECTED", "RESOLVED", "CLOSED"].includes(normalizeStatus(latestAction.action))) {
+    return null;
+  }
+
+  return latestAction;
+};
+
 const ReadOnlyMap = ({ latitude, longitude, locationName }) => {
   const hasValidCoordinates = isValidLatitude(latitude) && isValidLongitude(longitude);
   const center = hasValidCoordinates ? [latitude, longitude] : [20.5937, 78.9629];
@@ -301,10 +318,12 @@ const ReportDetailsPage = ({ variant = "citizen" }) => {
   const { reportId } = useParams();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const isPublicView = variant === "public";
+  const reportQueryKey = ["reports", "detail", reportId, variant];
 
   const reportQuery = useQuery({
-    queryKey: ["reports", "detail", reportId],
-    queryFn: () => getReport(reportId),
+    queryKey: reportQueryKey,
+    queryFn: () => getReport(reportId, isPublicView ? { scope: "public" } : {}),
     retry: false,
     staleTime: 1000 * 60 * 2,
     enabled: Boolean(reportId),
@@ -313,6 +332,7 @@ const ReportDetailsPage = ({ variant = "citizen" }) => {
   const report = useMemo(() => normalizeReport(reportQuery.data), [reportQuery.data]);
   const timelineEntries = useMemo(() => buildTimelineEntries(report), [report]);
   const imageEntries = useMemo(() => getImageEntries(report), [report]);
+  const latestAuthorityReview = useMemo(() => getLatestAuthorityReview(report), [report]);
   const hasCoordinates = isValidLatitude(report?.latitude) && isValidLongitude(report?.longitude);
 
   const actionMutation = useMutation({
@@ -327,7 +347,7 @@ const ReportDetailsPage = ({ variant = "citizen" }) => {
       const nextReport = result?.data?.report || result?.report || result?.data?.data?.report;
 
       if (nextReport) {
-        queryClient.setQueryData(["reports", "detail", reportId], { data: { report: nextReport } });
+        queryClient.setQueryData(reportQueryKey, { data: { report: nextReport } });
       }
 
       await Promise.all([
@@ -335,6 +355,7 @@ const ReportDetailsPage = ({ variant = "citizen" }) => {
         queryClient.invalidateQueries({ queryKey: ["dashboard", "citizen"] }),
         queryClient.invalidateQueries({ queryKey: ["reports", "authority"] }),
         queryClient.invalidateQueries({ queryKey: ["reports", "citizen"] }),
+        queryClient.invalidateQueries({ queryKey: ["reports", "community"] }),
         queryClient.invalidateQueries({ queryKey: ["reports", "detail", reportId] }),
       ]);
 
@@ -374,6 +395,8 @@ const ReportDetailsPage = ({ variant = "citizen" }) => {
   const headerSubtitle =
     variant === "authority"
       ? "Review the full report record and apply the next authority action when appropriate."
+      : isPublicView
+        ? "Review the public community incident record. Private reporter details are hidden."
       : "Review the full report record and track its current status.";
 
   return (
@@ -404,14 +427,68 @@ const ReportDetailsPage = ({ variant = "citizen" }) => {
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-slate-100">
-              <div className="flex items-center gap-2 font-semibold text-white">
-                <User className="h-4 w-4 text-accent-light" aria-hidden="true" />
-                {variant === "authority" ? user?.name || "Authority" : report.citizen?.name || "Citizen"}
-              </div>
-              <div className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">{variant === "authority" ? "Authority review" : "Citizen report"}</div>
+              {isPublicView ? (
+                <>
+                  <div className="flex items-center gap-2 font-semibold text-white">
+                    <MessageSquareText className="h-4 w-4 text-accent-light" aria-hidden="true" />
+                    Community report
+                  </div>
+                  <div className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">Public view</div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 font-semibold text-white">
+                    <User className="h-4 w-4 text-accent-light" aria-hidden="true" />
+                    {variant === "authority" ? user?.name || "Authority" : report.citizen?.name || "Citizen"}
+                  </div>
+                  <div className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">{variant === "authority" ? "Authority review" : "Citizen report"}</div>
+                </>
+              )}
             </div>
           </div>
         </header>
+
+        {latestAuthorityReview ? (
+          <section className="glass-panel card-glow rounded-3xl border border-white/5 p-6 shadow-card-glow sm:p-7">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-white">Authority Review</h2>
+                <p className="mt-1 text-sm leading-6 text-slate-400">The latest authority outcome and review metadata for this report.</p>
+              </div>
+              <ShieldAlert className="h-5 w-5 text-primary-light" aria-hidden="true" />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/5 bg-white/3 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Status</p>
+                <div className="mt-2">
+                  <StatusBadge status={report.status} />
+                </div>
+              </div>
+
+              {latestAuthorityReview.remarks ? (
+                <div className={`rounded-2xl border p-4 ${normalizeStatus(latestAuthorityReview.action) === "REJECTED" ? "border-red-400/20 bg-red-400/10" : "border-white/5 bg-white/3"}`}>
+                  <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${normalizeStatus(latestAuthorityReview.action) === "REJECTED" ? "text-red-200" : "text-slate-500"}`}>
+                    {normalizeStatus(latestAuthorityReview.action) === "REJECTED" ? "Reason" : "Authority Remark"}
+                  </p>
+                  <p className={`mt-2 text-sm leading-6 ${normalizeStatus(latestAuthorityReview.action) === "REJECTED" ? "text-red-50" : "text-slate-300"}`}>
+                    {latestAuthorityReview.remarks}
+                  </p>
+                </div>
+              ) : null}
+
+              <div className="rounded-2xl border border-white/5 bg-white/3 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Reviewed By</p>
+                <p className="mt-2 text-sm font-semibold text-white">{latestAuthorityReview.authority?.name || "Unknown authority"}</p>
+              </div>
+
+              <div className="rounded-2xl border border-white/5 bg-white/3 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Reviewed On</p>
+                <p className="mt-2 text-sm font-semibold text-white">{formatDate(latestAuthorityReview.createdAt)}</p>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_380px] lg:items-start">
           <div className="space-y-6">
@@ -449,27 +526,38 @@ const ReportDetailsPage = ({ variant = "citizen" }) => {
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-semibold text-white">Location</h2>
-                  <p className="mt-1 text-sm leading-6 text-slate-400">Read-only coordinates and map view for the incident.</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-400">
+                    {isPublicView ? "General location shown for public browsing." : "Read-only coordinates and map view for the incident."}
+                  </p>
                 </div>
                 <MapPinned className="h-5 w-5 text-primary-light" aria-hidden="true" />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              {isPublicView ? (
                 <div className="rounded-2xl border border-white/5 bg-white/3 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Location name</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">General location</p>
                   <p className="mt-2 text-sm font-semibold text-white">{report.locationName || "Location not provided"}</p>
                 </div>
-                <div className="rounded-2xl border border-white/5 bg-white/3 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Coordinates</p>
-                  <p className="mt-2 text-sm font-semibold text-white">
-                    {hasCoordinates ? `${formatCoordinate(report.latitude)}, ${formatCoordinate(report.longitude)}` : "Coordinates not available"}
-                  </p>
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-white/5 bg-white/3 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Location name</p>
+                      <p className="mt-2 text-sm font-semibold text-white">{report.locationName || "Location not provided"}</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/5 bg-white/3 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Coordinates</p>
+                      <p className="mt-2 text-sm font-semibold text-white">
+                        {hasCoordinates ? `${formatCoordinate(report.latitude)}, ${formatCoordinate(report.longitude)}` : "Coordinates not available"}
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="mt-5">
-                <ReadOnlyMap latitude={report.latitude} longitude={report.longitude} locationName={report.locationName} />
-              </div>
+                  <div className="mt-5">
+                    <ReadOnlyMap latitude={report.latitude} longitude={report.longitude} locationName={report.locationName} />
+                  </div>
+                </>
+              )}
             </section>
 
             <section className="glass-panel card-glow rounded-3xl border border-white/5 p-6 shadow-card-glow sm:p-7">
@@ -531,10 +619,24 @@ const ReportDetailsPage = ({ variant = "citizen" }) => {
                 <EmptyState icon={CalendarClock} title="No timeline available" description="The backend has not returned timeline events for this report yet." />
               )}
             </section>
+
           </div>
 
           {variant === "authority" ? (
             <AuthorityActionPanel report={report} onSubmitAction={handleSubmitAction} isSubmitting={actionMutation.isPending} />
+          ) : isPublicView ? (
+            <section className="glass-panel card-glow rounded-3xl border border-white/5 p-6 shadow-card-glow sm:p-7">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-white">Community report</h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-400">Private reporter details and authority internals are hidden in this public view.</p>
+                </div>
+                <MessageSquareText className="h-5 w-5 text-accent-light" aria-hidden="true" />
+              </div>
+              <div className="mt-5 rounded-2xl border border-white/5 bg-white/3 p-4 text-sm text-slate-400">
+                Only public incident information is shown here.
+              </div>
+            </section>
           ) : (
             <section className="glass-panel card-glow rounded-3xl border border-white/5 p-6 shadow-card-glow sm:p-7">
               <div className="flex items-start justify-between gap-4">

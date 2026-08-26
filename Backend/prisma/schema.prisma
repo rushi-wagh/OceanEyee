@@ -8,6 +8,102 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id               String            @id @default(cuid())
+  name             String
+  email            String            @unique
+  password         String
+  phone            String?           @unique
+  profileImage     String?
+  role             Role              @default(CITIZEN)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  authorityActions AuthorityAction[]
+  reports          Report[]          @relation("CitizenReports")
+  authorityReports Report[]          @relation("AssignedAuthority")
+
+  @@index([role])
+}
+
+model Report {
+  id                 String                @id @default(cuid())
+  reportNumber       String                @unique
+  title              String
+  description        String
+  status             ReportStatus          @default(SUBMITTED)
+  latitude           Float
+  longitude          Float
+  locationName       String?
+  citizenId          String
+  currentAuthorityId String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  authorityActions   AuthorityAction[]
+  intelligence       IncidentIntelligence?
+  citizen            User                  @relation("CitizenReports", fields: [citizenId], references: [id])
+  currentAuthority   User?                 @relation("AssignedAuthority", fields: [currentAuthorityId], references: [id])
+  images             ReportImage[]
+
+  @@index([status])
+  @@index([citizenId])
+  @@index([currentAuthorityId])
+}
+
+model ReportImage {
+  id        String   @id @default(cuid())
+  reportId  String
+  url       String
+  publicId  String
+  createdAt DateTime @default(now())
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+}
+
+model IncidentIntelligence {
+  id                String             @id @default(cuid())
+  reportId          String             @unique
+  hazardType        String?
+  summary           String?
+  confidence        Float?
+  priorityScore     Int?
+  recommendation    String?
+  duplicateReports  Json?
+  socialEvidence    Json?
+  historicalContext Json?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  processingStatus  AIProcessingStatus @default(PENDING)
+  reasoning         String?
+  report            Report             @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([processingStatus])
+  @@index([priorityScore])
+}
+
+model AuthorityAction {
+  id          String              @id @default(cuid())
+  reportId    String
+  authorityId String
+  action      AuthorityActionType
+  remarks     String?
+  createdAt   DateTime            @default(now())
+  authority   User                @relation(fields: [authorityId], references: [id])
+  report      Report              @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@index([authorityId])
+}
+
+model KnowledgeDocument {
+  id        String       @id @default(cuid())
+  type      DocumentType
+  sourceId  String?
+  title     String
+  content   String
+  createdAt DateTime     @default(now())
+}
+
 enum Role {
   CITIZEN
   AUTHORITY
@@ -32,9 +128,9 @@ enum AIProcessingStatus {
 
 enum AuthorityActionType {
   VERIFIED
-  REJECTED
   RESOLVED
   CLOSED
+  REJECTED
 }
 
 enum DocumentType {
@@ -42,145 +138,4 @@ enum DocumentType {
   SOP
   INCIDENT_HISTORY
   RESOLUTION_NOTE
-}
-
-model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  password     String
-  phone        String?  @unique 
-  profileImage String?
-
-  role Role @default(CITIZEN)
-
-  reports          Report[] @relation("CitizenReports")
-  authorityReports Report[] @relation("AssignedAuthority")
-  authorityActions AuthorityAction[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([role])
-}
-
-model Report {
-  id           String @id @default(cuid())
-  reportNumber String @unique
-
-  title       String
-  description String
-
-  status ReportStatus @default(SUBMITTED)
-
-  latitude     Float
-  longitude    Float
-  locationName String?
-
-  citizenId String
-  citizen   User @relation("CitizenReports", fields: [citizenId], references: [id])
-
-  currentAuthorityId String?
-  currentAuthority   User? @relation("AssignedAuthority", fields: [currentAuthorityId], references: [id])
-
-  images ReportImage[]
-
-  intelligence IncidentIntelligence?
-
-  authorityActions AuthorityAction[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([status])
-  @@index([citizenId])
-  @@index([currentAuthorityId])
-}
-
-model ReportImage {
-  id String @id @default(cuid())
-
-  reportId String
-
-  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
-
-  url String
-
-  publicId String
-
-  createdAt DateTime @default(now())
-
-  @@index([reportId])
-}
-
-model IncidentIntelligence {
-  id String @id @default(cuid())
-
-  reportId String @unique
-
-  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
-
-  processingStatus AIProcessingStatus @default(PENDING)
-
-  hazardType String?
-
-  summary String?
-
-  confidence Float?
-
-  priorityScore Int?
-
-  recommendation String?
-
-  reasoning String?
-
-  duplicateReports Json?
-
-  socialEvidence Json?
-
-  historicalContext Json?
-
-  createdAt DateTime @default(now())
-
-  updatedAt DateTime @updatedAt
-
-  @@index([processingStatus])
-
-  @@index([priorityScore])
-}
-
-model AuthorityAction {
-  id String @id @default(cuid())
-
-  reportId String
-
-  authorityId String
-
-  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
-
-  authority User @relation(fields: [authorityId], references: [id])
-
-  action AuthorityActionType
-
-  remarks String?
-
-  createdAt DateTime @default(now())
-
-  @@index([reportId])
-
-  @@index([authorityId])
-}
-
-model KnowledgeDocument {
-  id String @id @default(cuid())
-
-  type DocumentType
-
-  sourceId String?
-
-  title String
-
-  content String
-
-  createdAt DateTime @default(now())
 }

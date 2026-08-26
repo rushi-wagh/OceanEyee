@@ -25,6 +25,30 @@ const isLoggedIn = asyncHandler(async (req, res, next) => {
   next();
 });
 
+const optionalAuth = asyncHandler(async (req, res, next) => {
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.replace("Bearer ", "") : req.cookies?.token;
+
+  if (!token) {
+    req.user = null;
+    next();
+    return;
+  }
+
+  const decodedToken = jwt.verify(token, process.env.JWT_SECRET || "change-this-secret");
+  const user = await prisma.user.findUnique({
+    where: { id: decodedToken.id },
+  });
+
+  if (!user) {
+    throw new ApiError(401, "Invalid access token");
+  }
+
+  const { password, ...safeUser } = user;
+  req.user = safeUser;
+  next();
+});
+
 const isAllowed = (...roles) => {
   return (req, res, next) => {
     const allowedRoles = roles.map((role) => role.toUpperCase());
@@ -37,4 +61,4 @@ const isAllowed = (...roles) => {
   };
 };
 
-export { isLoggedIn, isAllowed };
+export { isLoggedIn, isAllowed, optionalAuth };

@@ -3,13 +3,14 @@ import { MainLayout } from "@/app/layouts";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import LoginPage from "@/features/auth/LoginPage";
 import RegisterPage from "@/features/auth/RegisterPage";
-import { DashboardStub } from "@/features/auth/DashboardStub";
 import CreateReportPage from "@/features/citizen/CreateReportPage";
 import CitizenDashboard from "@/features/citizen/CitizenDashboard";
 import MyReportsPage from "@/features/citizen/MyReportsPage";
 import AuthorityDashboard from "@/features/authority/AuthorityDashboard";
 import ReportDetailsPage from "@/features/reports/ReportDetailsPage";
+import CommunityReportsPage from "@/features/community/CommunityReportsPage";
 import LandingPage from "@/features/landing/LandingPage";
+import AdminDashboard from "@/features/admin/AdminDashboard";
 
 const router = createBrowserRouter([
   {
@@ -49,6 +50,19 @@ const router = createBrowserRouter([
         ],
       },
       {
+        path: "community",
+        children: [
+          {
+            index: true,
+            element: <CommunityReportsPage />,
+          },
+          {
+            path: ":reportId",
+            element: <ReportDetailsPage variant="public" />,
+          },
+        ],
+      },
+      {
         path: "citizen",
         element: <ProtectedRoute allowedRoles={["CITIZEN"]} />,
         children: [
@@ -78,7 +92,7 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <DashboardStub title="Admin Dashboard" />,
+            element: <AdminDashboard />,
           },
         ],
       },

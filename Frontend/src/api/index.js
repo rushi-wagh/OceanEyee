@@ -3,6 +3,8 @@ export { getCurrentUser, loginUser, logoutUser, registerUser } from "./auth.api"
 export {
 	closeReport,
 	createReport,
+	getCommunityReport,
+	getCommunityReports,
 	getCitizenReports,
 	getReport,
 	getReports,
@@ -11,4 +13,5 @@ export {
 	uploadReportImages,
 	verifyReport,
 } from "./report.api";
-export { getAuthorityDashboard, getDashboard } from "./dashboard.api";
+export { getAdminDashboard, getAuthorityDashboard, getDashboard } from "./dashboard.api";
+export { getUsers, updateUserRole } from "./user.api";

@@ -6,6 +6,7 @@ import { connectDb } from "./src/utils/db.js";
 import authRouter from "./src/routes/auth.route.js";
 import dashboardRouter from "./src/routes/dashboard.route.js";
 import reportRouter from "./src/routes/report.route.js";
+import userRouter from "./src/routes/user.route.js";
 import { errorHandler, notFound } from "./src/middlewares/error.middleware.js";
 
 dotenv.config();
@@ -23,6 +24,7 @@ app.get("/api/v1/health", (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/reports", reportRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/users", userRouter);
 
 app.use(notFound);
 app.use(errorHandler);

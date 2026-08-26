@@ -10,4 +10,11 @@ const getAuthorityDashboard = async () => {
   return response.data;
 };
 
-export { getAuthorityDashboard, getDashboard };
+// Admin dashboard uses the same unified endpoint — the backend
+// role-dispatches to getAdminDashboard() when the caller is ADMIN.
+const getAdminDashboard = async () => {
+  const response = await api.get("/api/dashboard");
+  return response.data;
+};
+
+export { getAdminDashboard, getAuthorityDashboard, getDashboard };

@@ -18,6 +18,40 @@ const reportInclude = {
     },
   },
   images: true,
+  authorityActions: {
+    include: {
+      authority: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  },
+};
+
+const publicReportStatuses = ["VERIFIED", "RESOLVED"];
+
+const publicReportSelect = {
+  id: true,
+  reportNumber: true,
+  title: true,
+  description: true,
+  status: true,
+  locationName: true,
+  createdAt: true,
+  updatedAt: true,
+  images: {
+    select: {
+      id: true,
+      url: true,
+      createdAt: true,
+    },
+  },
 };
 
 const allowedStatuses = ["SUBMITTED", "PENDING_AUTHORITY", "VERIFIED", "REJECTED", "RESOLVED", "CLOSED"];
@@ -39,6 +73,21 @@ const getReportById = async (reportId) => {
   });
 
   if (!report) {
+    throw new ApiError(404, "Report not found");
+  }
+
+  return report;
+};
+
+const getPublicReportById = async (reportId) => {
+  const report = await prisma.report.findUnique({
+    where: {
+      id: reportId,
+    },
+    select: publicReportSelect,
+  });
+
+  if (!report || !publicReportStatuses.includes(report.status)) {
     throw new ApiError(404, "Report not found");
   }
 
@@ -79,7 +128,11 @@ const createReport = async (userId, data) => {
   return report;
 };
 
-const getReports = async (user, status) => {
+const getReports = async (user, status, scope = "private") => {
+  if (scope === "public") {
+    return getPublicReports(status);
+  }
+
   if (!user) {
     throw new ApiError(401, "User is required");
   }
@@ -115,13 +168,41 @@ const getReports = async (user, status) => {
   return reports;
 };
 
-const getSingleReport = async (user, reportId) => {
-  if (!user) {
+const getPublicReports = async (status) => {
+  const reportStatus = status ? status.toUpperCase() : "";
+
+  if (reportStatus && !publicReportStatuses.includes(reportStatus)) {
+    throw new ApiError(401, "Invalid report status");
+  }
+
+  const reports = await prisma.report.findMany({
+    where: {
+      status: reportStatus ? reportStatus : { in: publicReportStatuses },
+    },
+    select: publicReportSelect,
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  if (!reports || reports.length === 0) {
+    throw new ApiError(404, "No reports found");
+  }
+
+  return reports;
+};
+
+const getSingleReport = async (user, reportId, scope = "private") => {
+  if (!user && scope !== "public") {
     throw new ApiError(401, "User is required");
   }
 
   if (!reportId) {
     throw new ApiError(401, "Report ID is required");
+  }
+
+  if (scope === "public") {
+    return getPublicReportById(reportId);
   }
 
   const report = await getReportById(reportId);
@@ -284,6 +365,8 @@ export {
   createReport,
   deleteReport,
   getPublicNearbyReports,
+  getPublicReportById,
+  getPublicReports,
   getReports,
   getSingleReport,
   reportInclude,

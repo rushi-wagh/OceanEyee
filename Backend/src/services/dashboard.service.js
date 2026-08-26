@@ -120,12 +120,25 @@ const getAdminDashboard = async () => {
     return item?._count?.role || 0;
   };
 
+  const citizens = getRoleCount("CITIZEN");
+  const authorities = getRoleCount("AUTHORITY");
+  const administrators = getRoleCount("ADMIN");
+  const pendingReports = getStatusCount(reportStatusCounts, "SUBMITTED") + getStatusCount(reportStatusCounts, "PENDING_AUTHORITY");
+  const verifiedReports = getStatusCount(reportStatusCounts, "VERIFIED");
+  const resolvedReports = getStatusCount(reportStatusCounts, "RESOLVED");
+  const closedReports = getStatusCount(reportStatusCounts, "CLOSED");
+
   return {
-    totalUsers: getRoleCount("CITIZEN") + getRoleCount("AUTHORITY") + getRoleCount("ADMIN"),
-    authorities: getRoleCount("AUTHORITY"),
-    citizens: getRoleCount("CITIZEN"),
+    totalUsers: citizens + authorities + administrators,
+    citizens,
+    authorities,
+    administrators,
+    totalReports,
+    pendingReports,
+    verifiedReports,
+    resolvedReports,
+    closedReports,
     reports: totalReports,
-    resolvedReports: getStatusCount(reportStatusCounts, "RESOLVED") + getStatusCount(reportStatusCounts, "CLOSED"),
   };
 };
 
