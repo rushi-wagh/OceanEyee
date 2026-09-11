@@ -17,7 +17,7 @@ const LandingPage = () => {
 
       <Hero />
       <DashboardMockup />
-      <Stats />
+      {/* <Stats /> */}
       <Features />
       <Timeline />
       <AIVision />

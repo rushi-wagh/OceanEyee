@@ -24,6 +24,8 @@ const AuthProvider = ({ children }) => {
       await logoutUser();
       queryClient.setQueryData(["auth", "me"], null);
       queryClient.removeQueries({ queryKey: ["auth"] });
+      queryClient.removeQueries({ queryKey: ["dashboard"] });
+      queryClient.removeQueries({ queryKey: ["reports"] });
       showToast.success("Logged out successfully");
     } catch (error) {
       showToast.error(error.message || "Logout failed");

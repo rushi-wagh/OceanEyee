@@ -275,7 +275,7 @@ const CreateReportPage = () => {
               <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-semibold text-white">Images</h2>
-                  <p className="mt-1 text-sm leading-6 text-slate-400">Upload supporting photos. The backend accepts up to three images, 5 MB each.</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-400">Upload supporting photos.</p>
                 </div>
                 <Camera className="h-5 w-5 text-accent-light" aria-hidden="true" />
               </div>

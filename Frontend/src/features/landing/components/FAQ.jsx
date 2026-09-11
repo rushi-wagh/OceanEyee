@@ -4,21 +4,30 @@ import { ChevronDown, HelpCircle } from "lucide-react";
 
 const FAQ_ITEMS = [
   {
-    question: "How do I report a marine incident on OceanEye?",
-    answer: "Citizens can report hazards by clicking 'Report Incident' on the navigation bar. The reporting form allows you to capture precise GPS coordinates of the incident location, fill out descriptive fields detailing the size or nature of the hazard, and upload verification images directly from your device."
+    question: "How can I report an incident?",
+    answer:
+      "Citizens can report a marine incident by filling out the incident form with the required details and submitting it on OceanEye.",
   },
   {
-    question: "Who responds to the incident reports filed on the platform?",
-    answer: "Incident reports are mapped against regional sector grids and routed to the corresponding regional authority (such as local coast guard sectors, municipal marine units, or marine environmental protection agencies) responsible for responding to coordinates in that zone."
+    question: "What happens after I submit an incident?",
+    answer:
+      "The reported incident is sent to the official dashboard, where an authorized official can review the report and either approve or reject it.",
   },
   {
-    question: "Can I check the status of my report after submission?",
-    answer: "Yes. Every report is logged with a unique, sequence-based tracking number. Citizens can monitor the report state in real-time through the operational feed as it moves from SUBMITTED, to PENDING_AUTHORITY review, to VERIFIED, and eventually to RESOLVED with dispatch remarks."
+    question: "Who can see the reported incidents?",
+    answer:
+      "Pending reports are visible to officials for review. Once an incident is approved, it becomes visible to all citizens on the platform.",
   },
   {
-    question: "Are responders provided standard operating procedures for hazards?",
-    answer: "Yes. The OceanEye workspace embeds standard operating procedures (SOPs) corresponding to specific incident types. When authorities verify an incident, they are guided by standardized resolution criteria to coordinate containment and safety measures efficiently."
-  }
+    question: "Can officials reject an incident report?",
+    answer:
+      "Yes. Officials can review submitted reports and reject them if the information is incorrect, incomplete, or does not represent a valid incident.",
+  },
+  {
+    question: "Can I see approved incidents?",
+    answer:
+      "Yes. Approved incidents are displayed on the platform so that citizens can stay informed about reported marine incidents.",
+  },
 ];
 
 const FAQ = () => {
@@ -29,7 +38,10 @@ const FAQ = () => {
   };
 
   return (
-    <section id="faq" className="relative py-24 px-6 bg-navy-950/20 border-t border-white/5">
+    <section
+      id="faq"
+      className="relative py-24 px-6 bg-navy-950/20 border-t border-white/5"
+    >
       {/* Background glow effects */}
       <div className="absolute top-1/4 left-10 w-[300px] h-[300px] rounded-full bg-primary/5 blur-[100px] pointer-events-none"></div>
 
@@ -59,7 +71,9 @@ const FAQ = () => {
                   className="w-full flex items-center justify-between p-6 text-left font-bold text-slate-100 hover:text-white transition-colors duration-200 cursor-pointer"
                   aria-expanded={isOpen}
                 >
-                  <span className="text-sm sm:text-base leading-snug">{item.question}</span>
+                  <span className="text-sm sm:text-base leading-snug">
+                    {item.question}
+                  </span>
                   <ChevronDown
                     className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${
                       isOpen ? "rotate-180 text-primary-light" : ""

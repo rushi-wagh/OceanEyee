@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { humanizeStatus } from "@/components/ui/statusUtils";
+import { useAuth } from "@/hooks/useAuth";
 
 const formatDate = (value) => {
   try {
@@ -82,16 +83,19 @@ const getDetailEntries = (report) => {
 };
 
 const MyReportsPage = () => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [sortOrder, setSortOrder] = useState("newest");
   const [expandedReportId, setExpandedReportId] = useState(null);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["reports", "citizen"],
+    queryKey: ["reports", "citizen", user?.id],
     queryFn: getCitizenReports,
     retry: false,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 0,
+    refetchOnMount: "always",
+    enabled: Boolean(user?.id),
   });
 
   const reports = useMemo(() => normalizeReports(data), [data]);

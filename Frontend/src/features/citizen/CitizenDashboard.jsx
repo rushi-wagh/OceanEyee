@@ -28,10 +28,12 @@ const CitizenDashboard = () => {
   const { user, logout } = useAuth();
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["dashboard", "citizen"],
+    queryKey: ["dashboard", "citizen", user?.id],
     queryFn: getDashboard,
     retry: false,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 0,
+    refetchOnMount: "always",
+    enabled: Boolean(user?.id),
   });
 
   useEffect(() => {
