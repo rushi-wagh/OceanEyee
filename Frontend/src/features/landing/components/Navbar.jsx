@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Eye, Menu, X } from "lucide-react";
+import { ChevronRight, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -50,17 +50,11 @@ const Navbar = () => {
       <div className="mx-auto flex max-w-7xl items-center justify-between rounded-3xl px-5 sm:px-6">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group" onClick={() => setIsOpen(false)}>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-glow-primary transition-transform duration-300 group-hover:scale-105">
-            <Eye className="w-5.5 h-5.5 text-white" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-              OceanEye
-            </span>
-            <span className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase -mt-1">
-              Maritime Response
-            </span>
-          </div>
+          <img
+            src="/OceanEye%20Wave%20Emblem.png"
+            alt="OceanEye"
+            className="h-12 w-28 object-contain transition-transform duration-300 group-hover:scale-105"
+          />
         </Link>
 
         <div className="hidden md:flex items-center gap-8">

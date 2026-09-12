@@ -52,10 +52,21 @@ const Hero = () => {
             variants={itemVariants}
             className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white max-w-4xl leading-[1.1] mb-6"
           >
-            Report. Verify.{" "}
-            <span className="bg-gradient-to-r from-primary-light via-primary to-accent-light bg-clip-text text-transparent">
-              Protect.
-            </span>
+            <motion.span
+              animate={{ clipPath: ["inset(0 100% 0 0)", "inset(0 0% 0 0)", "inset(0 0% 0 0)", "inset(0 100% 0 0)", "inset(0 100% 0 0)"] }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                times: [0, 0.45, 0.65, 0.95, 1],
+                ease: "linear",
+              }}
+              className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white max-w-4xl leading-[1.1] mb-6"
+            >
+              Report. Verify. {" "}
+              <span>
+                Protect.
+              </span>
+            </motion.span>
           </motion.h1>
 
           <motion.p
