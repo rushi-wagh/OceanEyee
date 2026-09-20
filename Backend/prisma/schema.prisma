@@ -18,6 +18,7 @@ model User {
   role             Role              @default(CITIZEN)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+
   authorityActions AuthorityAction[]
   reports          Report[]          @relation("CitizenReports")
   authorityReports Report[]          @relation("AssignedAuthority")
@@ -38,11 +39,12 @@ model Report {
   currentAuthorityId String?
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
-  authorityActions   AuthorityAction[]
-  intelligence       IncidentIntelligence?
-  citizen            User                  @relation("CitizenReports", fields: [citizenId], references: [id])
-  currentAuthority   User?                 @relation("AssignedAuthority", fields: [currentAuthorityId], references: [id])
-  images             ReportImage[]
+
+  authorityActions AuthorityAction[]
+  intelligence     IncidentIntelligence?
+  citizen          User                  @relation("CitizenReports", fields: [citizenId], references: [id])
+  currentAuthority User?                 @relation("AssignedAuthority", fields: [currentAuthorityId], references: [id])
+  images           ReportImage[]
 
   @@index([status])
   @@index([citizenId])
@@ -55,27 +57,30 @@ model ReportImage {
   url       String
   publicId  String
   createdAt DateTime @default(now())
-  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@index([reportId])
 }
 
 model IncidentIntelligence {
-  id                String             @id @default(cuid())
-  reportId          String             @unique
-  hazardType        String?
-  summary           String?
-  confidence        Float?
-  priorityScore     Int?
-  recommendation    String?
-  duplicateReports  Json?
-  socialEvidence    Json?
-  historicalContext Json?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  processingStatus  AIProcessingStatus @default(PENDING)
-  reasoning         String?
-  report            Report             @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  id                 String             @id @default(cuid())
+  reportId           String             @unique
+  hazardType         String?
+  summary            String?
+  confidence         Float?
+  visionAnalysis     Json?
+  nlpAnalysis        Json?
+  geoAnalysis        Json?
+  duplicateAnalysis  Json?
+  priorityScore      Int?
+  recommendation     String?
+  reasoning          String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  processingStatus   AIProcessingStatus @default(PENDING)
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@index([processingStatus])
   @@index([priorityScore])
@@ -88,8 +93,9 @@ model AuthorityAction {
   action      AuthorityActionType
   remarks     String?
   createdAt   DateTime            @default(now())
-  authority   User                @relation(fields: [authorityId], references: [id])
-  report      Report              @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  authority User   @relation(fields: [authorityId], references: [id])
+  report    Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
   @@index([reportId])
   @@index([authorityId])
