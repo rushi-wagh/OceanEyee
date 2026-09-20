@@ -5,35 +5,7 @@ const Footer = () => {
     <footer className="relative pt-24 pb-12 px-6 bg-[#02050c] border-t border-white/5 overflow-hidden">
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px] pointer-events-none"></div>
 
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="glass-panel p-8 md:p-12 rounded-3xl border border-white/5 bg-gradient-to-tr from-navy-950/80 to-background-card/50 flex flex-col md:flex-row items-center justify-between gap-8 mb-20 shadow-2xl">
-          <div className="text-center md:text-left max-w-xl">
-            <h3 className="text-2xl font-extrabold text-white sm:text-3xl mb-3">
-              Help report marine incidents
-            </h3>
-
-            <p className="text-sm text-slate-400 leading-relaxed font-normal">
-              Report a marine incident and help authorities identify and respond
-              to hazards in your area.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto justify-center">
-            <a
-              href="/report"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-white bg-primary hover:bg-primary-dark transition-all duration-200 py-3 px-6 rounded-xl shadow-glow-primary hover:scale-[1.02]"
-            >
-              Report Incident
-            </a>
-
-            <a
-              href="/login"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-slate-300 hover:text-white transition-all duration-200 py-3 px-6 rounded-xl border border-white/10 hover:bg-white/5"
-            >
-              Authority Login
-            </a>
-          </div>
-        </div>
+       <div className="max-w-7xl mx-auto relative z-10">
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-6 pb-16 border-b border-white/5">
           <div className="md:col-span-6 flex flex-col gap-4">

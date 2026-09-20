@@ -60,12 +60,9 @@ const Hero = () => {
                 times: [0, 0.45, 0.65, 0.95, 1],
                 ease: "linear",
               }}
-              className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white max-w-4xl leading-[1.1] mb-6"
+              className="inline-block bg-gradient-to-b from-white via-white/90 to-slate-400 bg-clip-text text-transparent border-r-2 border-white/80 pr-1 text-4xl sm:text-6xl font-extrabold tracking-tight max-w-4xl leading-[1.1]"
             >
-              Report. Verify. {" "}
-              <span>
-                Protect.
-              </span>
+              Report. Verify. Protect.
             </motion.span>
           </motion.h1>
 

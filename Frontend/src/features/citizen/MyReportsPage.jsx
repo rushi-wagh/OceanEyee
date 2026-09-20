@@ -1,14 +1,13 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, FileText, Search, SortAsc, SortDesc } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getCitizenReports } from "@/api/report.api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { humanizeStatus } from "@/components/ui/statusUtils";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/store/authStore";
+import { useReportStore } from "@/store/reportStore";
 
 const formatDate = (value) => {
   try {
@@ -83,22 +82,25 @@ const getDetailEntries = (report) => {
 };
 
 const MyReportsPage = () => {
-  const { user } = useAuth();
+  const user = useAuthStore((state) => state.user);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [sortOrder, setSortOrder] = useState("newest");
   const [expandedReportId, setExpandedReportId] = useState(null);
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["reports", "citizen", user?.id],
-    queryFn: getCitizenReports,
-    retry: false,
-    staleTime: 0,
-    refetchOnMount: "always",
-    enabled: Boolean(user?.id),
-  });
+  const fetchCitizenReports = useReportStore((state) => state.fetchCitizenReports);
+  const citizenReports = useReportStore((state) => state.citizenReports);
+  const isLoading = useReportStore((state) => state.isLoadingCitizenReports);
+  const isError = Boolean(useReportStore((state) => state.citizenError));
+  const error = useReportStore((state) => state.citizenError);
 
-  const reports = useMemo(() => normalizeReports(data), [data]);
+  useEffect(() => {
+    if (user?.id) {
+      void fetchCitizenReports();
+    }
+  }, [user?.id, fetchCitizenReports]);
+
+  const reports = useMemo(() => normalizeReports(citizenReports), [citizenReports]);
 
   const availableStatuses = useMemo(() => {
     const statuses = new Set(reports.map((report) => normalizeStatus(report.status)).filter(Boolean));
@@ -155,7 +157,7 @@ const MyReportsPage = () => {
   };
 
   const handleRetry = () => {
-    refetch();
+    void fetchCitizenReports();
   };
 
   return (
@@ -280,7 +282,7 @@ const MyReportsPage = () => {
             actionIcon={ArrowRight}
           />
         ) : isError ? (
-          <ErrorState message={error?.message || "Unable to load your reports."} onRetry={handleRetry} />
+          <ErrorState message={error || "Unable to load your reports."} onRetry={handleRetry} />
         ) : filteredReports.length === 0 ? (
           <EmptyState
             icon={FileText}

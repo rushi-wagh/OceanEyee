@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChevronRight, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/store/authStore";
 
 const getDashboardMeta = (role) => {
   if (role === "AUTHORITY") {
@@ -18,7 +18,9 @@ const getDashboardMeta = (role) => {
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { user, isAuthenticated, logout } = useAuth();
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const logout = useAuthStore((state) => state.logout);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -57,14 +59,16 @@ const Navbar = () => {
           />
         </Link>
 
-        <div className="hidden md:flex items-center gap-8">
-          <Link to="/" className="text-sm font-medium text-slate-300 hover:text-white transition-colors duration-200">
-            Home
-          </Link>
-          <Link to="/community" className="text-sm font-medium text-slate-300 hover:text-white transition-colors duration-200">
-            Community Reports
-          </Link>
-        </div>
+        {isAuthenticated ? (
+          <div className="hidden md:flex items-center gap-8">
+            <Link to="/" className="text-sm font-medium text-slate-300 hover:text-white transition-colors duration-200">
+              Home
+            </Link>
+            <Link to="/community" className="text-sm font-medium text-slate-300 hover:text-white transition-colors duration-200">
+              Community Reports
+            </Link>
+          </div>
+        ) : null}
 
         {/* Action Buttons */}
         <div className="hidden md:flex items-center gap-4">
@@ -108,12 +112,16 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 glass-panel border-b border-white/5 py-6 px-6 animate-in fade-in slide-in-from-top-4 duration-200">
           <div className="flex flex-col gap-5">
-            <Link to="/" onClick={() => setIsOpen(false)} className="text-base font-medium text-slate-300 hover:text-white transition-colors">
-              Home
-            </Link>
-            <Link to="/community" onClick={() => setIsOpen(false)} className="text-base font-medium text-slate-300 hover:text-white transition-colors">
-              Community Reports
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to="/" onClick={() => setIsOpen(false)} className="text-base font-medium text-slate-300 hover:text-white transition-colors">
+                  Home
+                </Link>
+                <Link to="/community" onClick={() => setIsOpen(false)} className="text-base font-medium text-slate-300 hover:text-white transition-colors">
+                  Community Reports
+                </Link>
+              </>
+            ) : null}
             <div className="h-px bg-white/5 my-2"></div>
             <div className="flex flex-col gap-4">
               {!isAuthenticated ? (

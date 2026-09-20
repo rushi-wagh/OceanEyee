@@ -1,14 +1,12 @@
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { Building2, CheckCircle2, Clock3, FileText, Search, Shield, UserCog, UserRoundCog, Users } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getAdminDashboard } from "@/api/dashboard.api";
-import { getUsers, updateUserRole } from "@/api/user.api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { showToast } from "@/components/ui/showToast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/store/authStore";
+import { useDashboardStore } from "@/store/dashboardStore";
 
 const ROLE_OPTIONS = ["CITIZEN", "AUTHORITY", "ADMIN"];
 
@@ -42,47 +40,28 @@ const getRoleToneClassName = (role) => {
 };
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const user = useAuthStore((state) => state.user);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [pendingRoles, setPendingRoles] = useState({});
+  const [isUpdatingRoleId, setIsUpdatingRoleId] = useState(null);
 
-  const dashboardQuery = useQuery({
-    queryKey: ["dashboard", "admin"],
-    queryFn: getAdminDashboard,
-    retry: false,
-    staleTime: 1000 * 60 * 2,
-  });
+  const fetchAdminDashboard = useDashboardStore((state) => state.fetchAdminDashboard);
+  const fetchUsers = useDashboardStore((state) => state.fetchUsers);
+  const updateUserRole = useDashboardStore((state) => state.updateUserRole);
+  const adminDashboard = useDashboardStore((state) => state.adminDashboard);
+  const users = useDashboardStore((state) => state.users);
+  const isLoadingAdminDashboard = useDashboardStore((state) => state.isLoadingAdminDashboard);
+  const isLoadingUsers = useDashboardStore((state) => state.isLoadingUsers);
+  const dashboardError = useDashboardStore((state) => state.error);
 
-  const usersQuery = useQuery({
-    queryKey: ["users", "admin"],
-    queryFn: () => getUsers(),
-    retry: false,
-    staleTime: 1000 * 60,
-  });
+  useEffect(() => {
+    void fetchAdminDashboard();
+    void fetchUsers();
+  }, [fetchAdminDashboard, fetchUsers]);
 
-  const roleUpdateMutation = useMutation({
-    mutationFn: ({ userId, role }) => updateUserRole(userId, role),
-    onSuccess: async () => {
-      showToast.success("User role updated successfully");
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["users", "admin"] }),
-        queryClient.invalidateQueries({ queryKey: ["dashboard", "admin"] }),
-      ]);
-    },
-    onError: (error) => {
-      showToast.error(error?.message || "Unable to update role");
-    },
-  });
-
-  const dashboardPayload = normalizePayload(dashboardQuery.data);
-  const usersPayload = normalizePayload(usersQuery.data);
-  const users = useMemo(
-    () => (Array.isArray(usersPayload.users) ? usersPayload.users : []),
-    [usersPayload.users],
-  );
+  const dashboardPayload = normalizePayload(adminDashboard);
 
   const totalAdmins = useMemo(() => users.filter((item) => item.role === "ADMIN").length, [users]);
 
@@ -104,9 +83,9 @@ const AdminDashboard = () => {
     });
   }, [roleFilter, searchTerm, users]);
 
-  const isLoading = dashboardQuery.isLoading || usersQuery.isLoading;
-  const isError = dashboardQuery.isError || usersQuery.isError;
-  const errorMessage = dashboardQuery.error?.message || usersQuery.error?.message || "Unable to load admin dashboard.";
+  const isLoading = isLoadingAdminDashboard || isLoadingUsers;
+  const isError = Boolean(dashboardError);
+  const errorMessage = dashboardError || "Unable to load admin dashboard.";
 
   const statCards = [
     {
@@ -185,15 +164,18 @@ const AdminDashboard = () => {
     });
   };
 
-  const handleConfirmRoleChange = (targetUserId, nextRole) => {
-    roleUpdateMutation.mutate(
-      { userId: targetUserId, role: nextRole },
-      {
-        onSuccess: () => {
-          handleCancelRoleChange(targetUserId);
-        },
-      },
-    );
+  const handleConfirmRoleChange = async (targetUserId, nextRole) => {
+    setIsUpdatingRoleId(targetUserId);
+
+    try {
+      await updateUserRole(targetUserId, nextRole);
+      handleCancelRoleChange(targetUserId);
+      showToast.success("User role updated successfully");
+    } catch (error) {
+      showToast.error(error?.message || "Unable to update role");
+    } finally {
+      setIsUpdatingRoleId(null);
+    }
   };
 
   return (
@@ -336,8 +318,8 @@ const AdminDashboard = () => {
           </section>
         ) : isError ? (
           <ErrorState message={errorMessage} onRetry={() => {
-            dashboardQuery.refetch();
-            usersQuery.refetch();
+            void fetchAdminDashboard();
+            void fetchUsers();
           }} />
         ) : filteredUsers.length === 0 ? (
           <EmptyState
@@ -358,7 +340,7 @@ const AdminDashboard = () => {
 
               const isSelf = user?.id === item.id;
               const isLastAdmin = item.role === "ADMIN" && totalAdmins === 1;
-              const isUpdating = roleUpdateMutation.isPending && roleUpdateMutation.variables?.userId === item.id;
+              const isUpdating = isUpdatingRoleId === item.id;
               const isRoleControlDisabled = isSelf || isUpdating;
 
               return (

@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   BadgeCheck,
@@ -11,14 +10,14 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getAuthorityDashboard } from "@/api/dashboard.api";
-import { getReports } from "@/api/report.api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { humanizeStatus } from "@/components/ui/statusUtils";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/store/authStore";
+import { useDashboardStore } from "@/store/dashboardStore";
+import { useReportStore } from "@/store/reportStore";
 
 const formatDate = (value) => {
   try {
@@ -100,27 +99,28 @@ const deriveStatsFromReports = (reports) => {
 };
 
 const AuthorityDashboard = () => {
-  const { user, logout } = useAuth();
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [sortOrder, setSortOrder] = useState("newest");
 
-  const authorityDashboardQuery = useQuery({
-    queryKey: ["dashboard", "authority"],
-    queryFn: getAuthorityDashboard,
-    retry: false,
-    staleTime: 1000 * 60 * 2,
-  });
+  const fetchAuthorityDashboard = useDashboardStore((state) => state.fetchAuthorityDashboard);
+  const fetchReports = useReportStore((state) => state.fetchReports);
+  const authorityDashboard = useDashboardStore((state) => state.authorityDashboard);
+  const authorityReports = useReportStore((state) => state.reports);
+  const isLoadingAuthorityDashboard = useDashboardStore((state) => state.isLoadingAuthorityDashboard);
+  const isLoadingReports = useReportStore((state) => state.isLoadingReports);
+  const authorityError = useDashboardStore((state) => state.error);
+  const reportError = useReportStore((state) => state.error);
 
-  const authorityReportsQuery = useQuery({
-    queryKey: ["reports", "authority"],
-    queryFn: getReports,
-    retry: false,
-    staleTime: 1000 * 60 * 2,
-  });
+  useEffect(() => {
+    void fetchAuthorityDashboard();
+    void fetchReports();
+  }, [fetchAuthorityDashboard, fetchReports]);
 
-  const dashboardPayload = normalizePayload(authorityDashboardQuery.data);
-  const primaryReports = useMemo(() => normalizeReports(authorityReportsQuery.data), [authorityReportsQuery.data]);
+  const dashboardPayload = normalizePayload(authorityDashboard);
+  const primaryReports = useMemo(() => normalizeReports(authorityReports), [authorityReports]);
   const fallbackReports = useMemo(() => normalizeReports(dashboardPayload.recentReports), [dashboardPayload.recentReports]);
   const reports = primaryReports.length > 0 ? primaryReports : fallbackReports;
 
@@ -152,14 +152,10 @@ const AuthorityDashboard = () => {
       });
   }, [reports, searchTerm, sortOrder, statusFilter]);
 
-  const isLoading = authorityDashboardQuery.isLoading || authorityReportsQuery.isLoading;
-  const reportError = authorityReportsQuery.isError && authorityReportsQuery.error?.statusCode !== 404 && reports.length === 0;
-  const isEmptyReportsState =
-    authorityReportsQuery.isError && authorityReportsQuery.error?.statusCode === 404
-      ? true
-      : !isLoading && reports.length === 0;
+  const isLoading = isLoadingAuthorityDashboard || isLoadingReports;
+  const isEmptyReportsState = !isLoading && reports.length === 0;
 
-  const errorMessage = authorityReportsQuery.error?.message || authorityDashboardQuery.error?.message || "Unable to load authority dashboard.";
+  const errorMessage = reportError || authorityError || "Unable to load authority dashboard.";
 
   const statCards = [
     {

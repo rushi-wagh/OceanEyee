@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -16,14 +15,14 @@ import {
 import { Link, useParams } from "react-router-dom";
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import L from "leaflet";
-import { getReport, closeReport, rejectReport, resolveReport, verifyReport } from "@/api/report.api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { humanizeStatus } from "@/components/ui/statusUtils";
 import { showToast } from "@/components/ui/showToast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/store/authStore";
+import { useReportStore } from "@/store/reportStore";
 import { formatCoordinate, formatLatitudeLongitude, isValidLatitude, isValidLongitude } from "@/features/citizen/locationUtils";
 
 const reportMarkerIcon = new L.Icon({
@@ -213,7 +212,7 @@ const AuthorityActionPanel = ({ report, onSubmitAction, isSubmitting }) => {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold text-white">Authority Action Panel</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-400">Only backend-supported transitions are shown for the current status.</p>
+            
           </div>
           <ShieldAlert className="h-5 w-5 text-primary-light" aria-hidden="true" />
         </div>
@@ -316,61 +315,51 @@ const AuthorityActionPanel = ({ report, onSubmitAction, isSubmitting }) => {
 
 const ReportDetailsPage = ({ variant = "citizen" }) => {
   const { reportId } = useParams();
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const user = useAuthStore((state) => state.user);
   const isPublicView = variant === "public";
-  const reportQueryKey = ["reports", "detail", reportId, variant];
 
-  const reportQuery = useQuery({
-    queryKey: reportQueryKey,
-    queryFn: () => getReport(reportId, isPublicView ? { scope: "public" } : {}),
-    retry: false,
-    staleTime: 1000 * 60 * 2,
-    enabled: Boolean(reportId),
-  });
+  const fetchReport = useReportStore((state) => state.fetchReport);
+  const fetchCommunityReport = useReportStore((state) => state.fetchCommunityReport);
+  const selectedReport = useReportStore((state) => state.selectedReport);
+  const isLoadingReport = useReportStore((state) => state.isLoadingReport);
+  const reportError = useReportStore((state) => state.reportError);
+  const submitAuthorityAction = useReportStore((state) => state.submitAuthorityAction);
 
-  const report = useMemo(() => normalizeReport(reportQuery.data), [reportQuery.data]);
+  useEffect(() => {
+    if (!reportId) {
+      return;
+    }
+
+    if (isPublicView) {
+      void fetchCommunityReport(reportId);
+      return;
+    }
+
+    void fetchReport(reportId);
+  }, [fetchCommunityReport, fetchReport, isPublicView, reportId]);
+
+  const report = useMemo(() => normalizeReport(selectedReport), [selectedReport]);
   const timelineEntries = useMemo(() => buildTimelineEntries(report), [report]);
   const imageEntries = useMemo(() => getImageEntries(report), [report]);
   const latestAuthorityReview = useMemo(() => getLatestAuthorityReview(report), [report]);
   const hasCoordinates = isValidLatitude(report?.latitude) && isValidLongitude(report?.longitude);
 
-  const actionMutation = useMutation({
-    mutationFn: async ({ action, remarks }) => {
-      if (action === "verify") return verifyReport(reportId, remarks);
-      if (action === "reject") return rejectReport(reportId, remarks);
-      if (action === "resolve") return resolveReport(reportId, remarks);
-      if (action === "close") return closeReport(reportId, remarks);
-      throw new Error("Unsupported authority action.");
-    },
-    onSuccess: async (result) => {
-      const nextReport = result?.data?.report || result?.report || result?.data?.data?.report;
-
-      if (nextReport) {
-        queryClient.setQueryData(reportQueryKey, { data: { report: nextReport } });
-      }
-
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["dashboard", "authority"] }),
-        queryClient.invalidateQueries({ queryKey: ["dashboard", "citizen"] }),
-        queryClient.invalidateQueries({ queryKey: ["reports", "authority"] }),
-        queryClient.invalidateQueries({ queryKey: ["reports", "citizen"] }),
-        queryClient.invalidateQueries({ queryKey: ["reports", "community"] }),
-        queryClient.invalidateQueries({ queryKey: ["reports", "detail", reportId] }),
-      ]);
-
-      showToast.success(result?.message || "Authority action completed successfully.");
-    },
-    onError: (error) => {
-      showToast.error(error?.message || "Failed to update the report.");
-    },
-  });
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false);
 
   const handleSubmitAction = async (action, remarks) => {
-    await actionMutation.mutateAsync({ action, remarks });
+    setIsSubmittingAction(true);
+
+    try {
+      const result = await submitAuthorityAction(reportId, action, remarks);
+      showToast.success(result?.message || "Authority action completed successfully.");
+    } catch (error) {
+      showToast.error(error?.message || "Failed to update the report.");
+    } finally {
+      setIsSubmittingAction(false);
+    }
   };
 
-  if (reportQuery.isLoading) {
+  if (isLoadingReport) {
     return (
       <main className="relative min-h-screen overflow-hidden bg-background bg-grid-pattern px-4 py-8 text-slate-100 sm:px-6 lg:px-8 lg:py-10">
         <div className="mx-auto flex max-w-7xl flex-col gap-4">
@@ -382,11 +371,18 @@ const ReportDetailsPage = ({ variant = "citizen" }) => {
     );
   }
 
-  if (reportQuery.isError || !report) {
+  if (reportError || !report) {
     return (
       <main className="relative min-h-screen overflow-hidden bg-background bg-grid-pattern px-4 py-8 text-slate-100 sm:px-6 lg:px-8 lg:py-10">
         <div className="mx-auto max-w-4xl">
-          <ErrorState message={reportQuery.error?.message || "Unable to load this report."} onRetry={() => reportQuery.refetch()} />
+          <ErrorState message={reportError || "Unable to load this report."} onRetry={() => {
+            if (isPublicView) {
+              void fetchCommunityReport(reportId);
+              return;
+            }
+
+            void fetchReport(reportId);
+          }} />
         </div>
       </main>
     );
@@ -623,7 +619,7 @@ const ReportDetailsPage = ({ variant = "citizen" }) => {
           </div>
 
           {variant === "authority" ? (
-            <AuthorityActionPanel report={report} onSubmitAction={handleSubmitAction} isSubmitting={actionMutation.isPending} />
+            <AuthorityActionPanel report={report} onSubmitAction={handleSubmitAction} isSubmitting={isSubmittingAction} />
           ) : isPublicView ? (
             <section className="glass-panel card-glow rounded-3xl border border-white/5 p-6 shadow-card-glow sm:p-7">
               <div className="flex items-start justify-between gap-4">

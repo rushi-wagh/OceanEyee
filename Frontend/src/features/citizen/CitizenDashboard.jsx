@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   CheckCircle2,
@@ -10,11 +9,11 @@ import {
   PlusCircle,
   Sparkles,
 } from "lucide-react";
-import { getDashboard } from "@/api/dashboard.api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { showToast } from "@/components/ui/showToast";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/store/authStore";
+import { useDashboardStore } from "@/store/dashboardStore";
 
 const formatDate = (iso) => {
   try {
@@ -25,24 +24,26 @@ const formatDate = (iso) => {
 };
 
 const CitizenDashboard = () => {
-  const { user, logout } = useAuth();
-
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["dashboard", "citizen", user?.id],
-    queryFn: getDashboard,
-    retry: false,
-    staleTime: 0,
-    refetchOnMount: "always",
-    enabled: Boolean(user?.id),
-  });
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
+  const fetchCitizenDashboard = useDashboardStore((state) => state.fetchCitizenDashboard);
+  const citizenDashboard = useDashboardStore((state) => state.citizenDashboard);
+  const isLoading = useDashboardStore((state) => state.isLoadingCitizenDashboard);
+  const error = useDashboardStore((state) => state.error);
 
   useEffect(() => {
-    if (isError) {
-      showToast.error(error?.message || "Failed to load dashboard");
+    if (user?.id) {
+      void fetchCitizenDashboard();
     }
-  }, [isError, error]);
+  }, [user?.id, fetchCitizenDashboard]);
 
-  const payload = data?.data || data || {};
+  useEffect(() => {
+    if (error) {
+      showToast.error(error || "Failed to load dashboard");
+    }
+  }, [error]);
+
+  const payload = citizenDashboard?.data || citizenDashboard || {};
   const totalReports = payload.totalReports ?? 0;
   const pendingReports = payload.pending ?? 0;
   const resolvedReports = payload.resolved ?? 0;

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
@@ -11,10 +10,10 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { createReport, uploadReportImages } from "@/api/report.api";
 import { showToast } from "@/components/ui/showToast";
 import { LocationPicker } from "@/features/citizen/LocationPicker";
 import { zodResolver } from "@/lib/zodResolver";
+import { useReportStore } from "@/store/reportStore";
 
 const MAX_IMAGES = 3;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -42,7 +41,7 @@ const fileKey = (file) => `${file.name}-${file.size}-${file.lastModified}`;
 
 const CreateReportPage = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const createReport = useReportStore((state) => state.createReport);
   const [imagePreviews, setImagePreviews] = useState([]);
 
   const {
@@ -110,35 +109,13 @@ const CreateReportPage = () => {
     });
   };
 
-  const submitMutation = useMutation({
-    mutationFn: async (values) => {
-      const { images, ...payload } = values;
-      const createResponse = await createReport(payload);
-      const report = createResponse?.data?.report;
-      const reportId = report?.id;
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-      if (!reportId) {
-        throw new Error("The server created the report but did not return a report ID.");
-      }
+  const submitReport = async (values) => {
+    setIsSubmitting(true);
 
-      if (!images.length) {
-        return { report, imagesUploaded: true };
-      }
-
-      try {
-        await uploadReportImages(reportId, images);
-        return { report, imagesUploaded: true };
-      } catch (error) {
-        return {
-          report,
-          imagesUploaded: false,
-          imageUploadError: error?.message || "Some images could not be uploaded.",
-        };
-      }
-    },
-    onSuccess: async (result) => {
-      await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      await queryClient.invalidateQueries({ queryKey: ["reports", "citizen"] });
+    try {
+      const result = await createReport(values);
 
       if (result.imagesUploaded) {
         showToast.success("Incident reported successfully");
@@ -149,11 +126,12 @@ const CreateReportPage = () => {
       reset();
       setImagePreviews([]);
       navigate("/citizen", { replace: true });
-    },
-    onError: (error) => {
-      showToast.error(error.message || "Failed to submit incident");
-    },
-  });
+    } catch (error) {
+      showToast.error(error?.message || "Failed to submit incident");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleImageChange = (event) => {
     const files = Array.from(event.target.files || []);
@@ -180,7 +158,7 @@ const CreateReportPage = () => {
   };
 
   const onSubmit = (values) => {
-    submitMutation.mutate(values);
+    void submitReport(values);
   };
 
   const imageCount = safeSelectedImages.length;
@@ -339,10 +317,10 @@ const CreateReportPage = () => {
               </p>
               <button
                 type="submit"
-                disabled={submitMutation.isPending || !isValid}
+                disabled={isSubmitting || !isValid}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-glow-primary transition hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {submitMutation.isPending ? "Submitting incident..." : "Submit Incident"}
+                {isSubmitting ? "Submitting incident..." : "Submit Incident"}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>

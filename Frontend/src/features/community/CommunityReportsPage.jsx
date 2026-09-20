@@ -1,13 +1,12 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, FileText, Search } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getCommunityReports } from "@/api/report.api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { humanizeStatus } from "@/components/ui/statusUtils";
+import { useReportStore } from "@/store/reportStore";
 
 const formatDate = (value) => {
   try {
@@ -63,14 +62,17 @@ const CommunityReportsPage = () => {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [sortOrder, setSortOrder] = useState("newest");
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["reports", "community"],
-    queryFn: getCommunityReports,
-    retry: false,
-    staleTime: 1000 * 60 * 2,
-  });
+  const fetchCommunityReports = useReportStore((state) => state.fetchCommunityReports);
+  const communityReports = useReportStore((state) => state.communityReports);
+  const isLoading = useReportStore((state) => state.isLoadingCommunityReports);
+  const isError = Boolean(useReportStore((state) => state.communityError));
+  const error = useReportStore((state) => state.communityError);
 
-  const reports = useMemo(() => normalizeReports(data), [data]);
+  useEffect(() => {
+    void fetchCommunityReports();
+  }, [fetchCommunityReports]);
+
+  const reports = useMemo(() => normalizeReports(communityReports), [communityReports]);
 
   const availableStatuses = useMemo(() => {
     const statuses = new Set(reports.map((report) => normalizeStatus(report.status)).filter(Boolean));
@@ -172,7 +174,7 @@ const CommunityReportsPage = () => {
             <CardSkeleton />
           </section>
         ) : isError ? (
-          <ErrorState message={error?.message || "Unable to load community reports."} onRetry={refetch} />
+          <ErrorState message={error || "Unable to load community reports."} onRetry={() => void fetchCommunityReports()} />
         ) : filteredReports.length === 0 ? (
           <EmptyState
             icon={FileText}

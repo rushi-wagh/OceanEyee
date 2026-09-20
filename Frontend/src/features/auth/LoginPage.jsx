@@ -1,13 +1,10 @@
-import { useMutation } from "@tanstack/react-query";
 import { ArrowRight, Eye, ShieldCheck } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { loginUser } from "@/api/auth.api";
-import { showToast } from "@/components/ui/showToast";
 import { CardSkeleton } from "@/components/ui/Skeleton";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/store/authStore";
 import { zodResolver } from "@/lib/zodResolver";
 
 const loginSchema = z.object({
@@ -23,7 +20,11 @@ const getDashboardPath = (role) => {
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, refetch } = useAuth();
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const login = useAuthStore((state) => state.login);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
@@ -42,21 +43,17 @@ const LoginPage = () => {
     setFocus("email");
   }, [setFocus]);
 
-  const loginMutation = useMutation({
-    mutationFn: loginUser,
-    onSuccess: async () => {
-      const result = await refetch();
-      const loggedInUser = result.data?.data?.user || result.data?.user;
-      showToast.success("Welcome back to OceanEye");
-      navigate(getDashboardPath(loggedInUser?.role), { replace: true });
-    },
-    onError: (error) => {
-      showToast.error(error.message || "Login failed");
-    },
-  });
+  const onSubmit = async (data) => {
+    setIsSubmitting(true);
 
-  const onSubmit = (data) => {
-    loginMutation.mutate(data);
+    try {
+      const loggedInUser = await login(data);
+      navigate(getDashboardPath(loggedInUser?.role), { replace: true });
+    } catch {
+      // Errors are handled by the auth store and surfaced as toasts.
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -133,10 +130,10 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            disabled={loginMutation.isPending}
+            disabled={isSubmitting}
             className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-glow-primary transition hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loginMutation.isPending ? "Signing in..." : "Sign in"}
+            {isSubmitting ? "Signing in..." : "Sign in"}
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
 

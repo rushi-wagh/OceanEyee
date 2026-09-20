@@ -1,10 +1,12 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import { CardSkeleton } from "@/components/ui/Skeleton";
+import { useAuthStore } from "@/store/authStore";
 
 const ProtectedRoute = ({ allowedRoles }) => {
   const location = useLocation();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isLoading = useAuthStore((state) => state.isLoading);
 
   if (isLoading) {
     return (
@@ -20,7 +22,7 @@ const ProtectedRoute = ({ allowedRoles }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && !allowedRoles.includes(user?.role)) {
     return <Navigate to="/" replace />;
   }
 

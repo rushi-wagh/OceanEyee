@@ -1,6 +1,5 @@
 import Hero from "./components/Hero";
 import DashboardMockup from "./components/DashboardMockup";
-import Stats from "./components/Stats";
 import Features from "./components/Features";
 import Timeline from "./components/Timeline";
 import AIVision from "./components/AIVision";
