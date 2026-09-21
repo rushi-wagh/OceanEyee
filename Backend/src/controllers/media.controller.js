@@ -3,6 +3,8 @@ import { uploadReportImages } from "../services/media.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
+import { processIncidentIntelligence } from "../services/incident.service.js";
+import { getSingleReport } from "../services/report.service.js";
 
 const uploadImages = asyncHandler(async (req, res) => {
   const user = req.user;
@@ -22,16 +24,19 @@ const uploadImages = asyncHandler(async (req, res) => {
   }
 
   const images = await uploadReportImages(user, reportId, files);
+  const report = await getSingleReport(user, reportId);
+
+  processIncidentIntelligence(report).catch((error) => {
+    console.error("Incident intelligence processing failed:", error);
+  });
   const urls = images.map((image) => image.url);
 
-  return res
-    .status(201)
-    .json(
-      new ApiResponse(201, "Images uploaded successfully", {
-        images,
-        urls,
-      })
-    );
+  return res.status(201).json(
+    new ApiResponse(201, "Images uploaded successfully", {
+      images,
+      urls,
+    }),
+  );
 });
 
 const deleteImage = asyncHandler(async (req, res) => {

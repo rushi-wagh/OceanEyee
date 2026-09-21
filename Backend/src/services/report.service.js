@@ -18,6 +18,7 @@ const reportInclude = {
     },
   },
   images: true,
+  intelligence: true,
   authorityActions: {
     include: {
       authority: {
