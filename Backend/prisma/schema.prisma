@@ -72,6 +72,7 @@ model IncidentIntelligence {
   visionAnalysis     Json?
   nlpAnalysis        Json?
   geoAnalysis        Json?
+  embedding          Json?
   duplicateAnalysis  Json?
   priorityScore      Int?
   recommendation     String?

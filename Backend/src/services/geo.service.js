@@ -67,6 +67,10 @@ const calculateHistoricalRiskScore = (incidentCount) => {
   return 0.8;
 };
 
+export {
+  calculateDistanceKm,
+};
+
 export const reverseGeocode = async (
   latitude,
   longitude,
