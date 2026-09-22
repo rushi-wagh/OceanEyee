@@ -43,6 +43,8 @@ const publicReportSelect = {
   title: true,
   description: true,
   status: true,
+  latitude: true,
+  longitude: true,
   locationName: true,
   createdAt: true,
   updatedAt: true,
@@ -51,6 +53,11 @@ const publicReportSelect = {
       id: true,
       url: true,
       createdAt: true,
+    },
+  },
+  intelligence: {
+    select: {
+      hazardType: true,
     },
   },
 };
@@ -252,7 +259,7 @@ const getPublicNearbyReports = async (data) => {
         lte: reportLongitude + longitudeRange,
       },
     },
-    include: reportInclude,
+    select: publicReportSelect,
     orderBy: {
       createdAt: "desc",
     },
