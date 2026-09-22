@@ -8,6 +8,7 @@ import { getPublicNearbyReports } from "../services/report.service.js";
 import { getReports } from "../services/report.service.js";
 import { getSingleReport } from "../services/report.service.js";
 import { updateReport } from "../services/report.service.js";
+import { getPublicHotspots } from "../intelligence/hotspot.service.js";
 
 const create = asyncHandler(async (req, res) => {
   const userId = req.user.id;
@@ -149,4 +150,19 @@ const assignMe = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Report assigned successfully", { report }));
 });
 
-export { assignMe, create, getAll, getNearby, getOne, remove, update };
+
+const getHotspots = asyncHandler(async (req, res) => {
+  const hotspots = await getPublicHotspots();
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        "Public hotspots fetched successfully",
+        { hotspots },
+      ),
+    );
+});
+
+export { assignMe, create, getAll, getNearby, getOne, remove, update, getHotspots };

@@ -7,7 +7,7 @@ import {
   findPossibleDuplicates,
 } from "./duplicate.service.js";
 import { generateEmbedding } from "./embedding.service.js";
-import { assessEvidenceConsistency } from "./evidenceConsistency.service.js";
+import { assessEvidenceConsistency } from "../services/evidenceConsistency.service.js";
 import { calculatePriority } from "./priority.service.js";
 import { generateRecommendation } from "./recommendation.service.js";
 import { analyzeReportImages } from "./vision.service.js";
@@ -60,7 +60,7 @@ const generateAndPersistIncidentEmbedding = async (
 };
 
 const processIncidentIntelligence = async (report) => {
-  console.log("[INTELLIGENCE] START:", report.id);
+  
   if (!report || typeof report !== "object") {
     throw new ApiError(400, "Report is required");
   }
@@ -70,7 +70,6 @@ const processIncidentIntelligence = async (report) => {
   }
 
   try {
-    console.log("[INTELLIGENCE] Setting PROCESSING");
     await prisma.incidentIntelligence.upsert({
       where: {
         reportId: report.id,
@@ -83,16 +82,14 @@ const processIncidentIntelligence = async (report) => {
         processingStatus: "PROCESSING",
       },
     });
-    console.log("[INTELLIGENCE] PROCESSING set");
+    
 
     const [visionAnalysis, nlpAnalysis, geoAnalysis] = await Promise.all([
       analyzeReportImages(report.images),
       analyzeDescription(report.description),
       analyzeGeo(report.latitude, report.longitude),
     ]);
-    console.log("[INTELLIGENCE] Vision:", visionAnalysis);
-    console.log("[INTELLIGENCE] NLP:", nlpAnalysis);
-    console.log("[INTELLIGENCE] Geo:", geoAnalysis);
+   
 
     const [evidenceConsistency, intelligenceWithEmbedding] = await Promise.all([
       Promise.resolve().then(() => {
@@ -107,11 +104,8 @@ const processIncidentIntelligence = async (report) => {
         visionAnalysis,
       ),
     ]);
-    console.log("[INTELLIGENCE] Evidence:", evidenceConsistency);
-    console.log(
-      "[INTELLIGENCE] Embedding length:",
-      intelligenceWithEmbedding?.embedding?.length,
-    );
+   
+    
 
     const [duplicateAnalysis, historicalRecurrence] = await Promise.all([
       findPossibleDuplicates({
@@ -130,8 +124,7 @@ const processIncidentIntelligence = async (report) => {
         currentHazardType: visionAnalysis.category,
       }),
     ]);
-    console.log("[INTELLIGENCE] Duplicate:", duplicateAnalysis);
-    console.log("[INTELLIGENCE] Historical:", historicalRecurrence);
+    
 
     const priority = calculatePriority({
       visionAnalysis,
@@ -141,7 +134,7 @@ const processIncidentIntelligence = async (report) => {
       historicalRecurrence,
       evidenceConsistency,
     });
-    console.log("[INTELLIGENCE] Priority:", priority);
+    
 
     const recommendation = await generateRecommendation({
       visionAnalysis,
@@ -152,9 +145,7 @@ const processIncidentIntelligence = async (report) => {
       evidenceConsistency,
       priority,
     });
-    console.log("[INTELLIGENCE] Generating recommendation...");
-    console.log("[INTELLIGENCE] Recommendation:", recommendation);
-    console.log("[INTELLIGENCE] Persisting final intelligence...");
+    
 
     const updatedIntelligence = await prisma.incidentIntelligence.update({
       where: {
@@ -170,6 +161,7 @@ const processIncidentIntelligence = async (report) => {
           ...duplicateAnalysis,
           historicalRecurrence,
         },
+        evidenceConsistency,
         embedding: intelligenceWithEmbedding.embedding,
         priorityScore: priority.score,
         recommendation: recommendation.recommendation,
@@ -177,7 +169,7 @@ const processIncidentIntelligence = async (report) => {
         processingStatus: "COMPLETED",
       },
     });
-    console.log("[INTELLIGENCE] Final intelligence persisted:", updatedIntelligence);
+    
     return updatedIntelligence;
   } catch (error) {
     console.error("Incident intelligence processing failed:", error);

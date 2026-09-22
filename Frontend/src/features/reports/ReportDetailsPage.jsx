@@ -13,8 +13,10 @@ import {
   XCircle,
 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { MapContainer, Marker, TileLayer } from "react-leaflet";
+import { Marker } from "react-leaflet";
 import L from "leaflet";
+import { IndiaMap } from "@/components/common/IndiaMap";
+import { indiaMapCenter, indiaMapMinZoom } from "@/components/common/indiaMapConfig";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { CardSkeleton } from "@/components/ui/Skeleton";
@@ -24,6 +26,15 @@ import { showToast } from "@/components/ui/showToast";
 import { useAuthStore } from "@/store/authStore";
 import { useReportStore } from "@/store/reportStore";
 import { formatCoordinate, formatLatitudeLongitude, isValidLatitude, isValidLongitude } from "@/features/citizen/locationUtils";
+import {
+  buildAssessmentNotes,
+  buildReportedIndicators,
+  buildSuggestedNextStep,
+  formatHazardLabel,
+  getEvidencePresentation,
+  getPriorityLabel,
+  normalizeArray,
+} from "@/features/reports/authorityAssessmentPresentation";
 
 const reportMarkerIcon = new L.Icon({
   iconUrl: new URL("leaflet/dist/images/marker-icon.png", import.meta.url).href,
@@ -122,9 +133,198 @@ const getLatestAuthorityReview = (report) => {
   return latestAction;
 };
 
+const AssessmentList = ({ label, items }) => {
+  const values = normalizeArray(items);
+
+  if (values.length === 0) {
+    return null;
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</p>
+      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-300">
+        {values.map((item, index) => <li key={`${label}-${index}`}>{String(item)}</li>)}
+      </ul>
+    </div>
+  );
+};
+
+const AssessmentCard = ({ label, children, tone = "default" }) => (
+  <div className={`rounded-2xl border p-4 ${tone === "positive" ? "border-emerald-400/20 bg-emerald-400/10" : tone === "caution" ? "border-amber-400/20 bg-amber-400/10" : "border-white/5 bg-white/3"}`}>
+    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</p>
+    <div className="mt-2 text-sm leading-6 text-slate-300">{children}</div>
+  </div>
+);
+
+const IncidentAssessment = ({ intelligence, reportDescription }) => {
+  const processingStatus = normalizeStatus(intelligence?.processingStatus || "PENDING");
+
+  if (processingStatus === "PENDING") {
+    return (
+      <section className="glass-panel card-glow rounded-3xl border border-white/5 p-6 shadow-card-glow sm:p-7">
+        <h2 className="text-xl font-semibold text-white">Incident Assessment</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-400">Assessment is being prepared.</p>
+      </section>
+    );
+  }
+
+  if (processingStatus === "PROCESSING") {
+    return (
+      <section className="glass-panel card-glow rounded-3xl border border-white/5 p-6 shadow-card-glow sm:p-7">
+        <h2 className="text-xl font-semibold text-white">Incident Assessment</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-400">Assessment is currently being prepared.</p>
+      </section>
+    );
+  }
+
+  if (processingStatus === "FAILED") {
+    return (
+      <section className="glass-panel card-glow rounded-3xl border border-white/5 p-6 shadow-card-glow sm:p-7">
+        <h2 className="text-xl font-semibold text-white">Incident Assessment</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-400">Assessment could not be completed.</p>
+      </section>
+    );
+  }
+
+  const vision = intelligence?.visionAnalysis || {};
+  const nlp = intelligence?.nlpAnalysis || {};
+  const geo = intelligence?.geoAnalysis || {};
+  const duplicate = intelligence?.duplicateAnalysis || {};
+  const historical = duplicate.historicalRecurrence || {};
+  const relatedReports = normalizeArray(duplicate.matchedReports);
+  const evidencePresentation = getEvidencePresentation(intelligence?.evidenceConsistency);
+  const reportedHazard = formatHazardLabel(nlp.primaryHazard || nlp.hazardType || intelligence?.hazardType || vision.category);
+  const reportedIndicators = buildReportedIndicators(nlp);
+  const suggestedNextStep = buildSuggestedNextStep(intelligence);
+  const assessmentNotes = buildAssessmentNotes(intelligence);
+
+  return (
+    <section className="glass-panel card-glow rounded-3xl border border-white/5 p-6 shadow-card-glow sm:p-7">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold text-white">Incident Assessment</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-400">A decision-support summary based on the available report evidence.</p>
+        </div>
+        <ShieldAlert className="h-5 w-5 text-primary-light" aria-hidden="true" />
+      </div>
+
+      <div className="grid gap-4">
+        <AssessmentCard label="What was observed">
+          {vision.description ? <p>{vision.description}</p> : <p>No observation summary is available.</p>}
+          <div className="mt-4 space-y-4">
+            <AssessmentList label="Visible evidence" items={vision.visibleHazardEvidence} />
+            <AssessmentList label="Severity indicators" items={vision.severityIndicators} />
+            <AssessmentList label="Additional observations" items={vision.observations} />
+          </div>
+        </AssessmentCard>
+
+        <AssessmentCard label="Report details">
+          <p className="text-slate-400">Submitted report information as provided by the citizen.</p>
+          <p className="mt-3 whitespace-pre-wrap text-white">{reportDescription || "No description was provided."}</p>
+          {reportedHazard ? (
+            <p className="mt-4">
+              <span className="font-semibold text-white">Reported hazard:</span>{" "}
+              <span>{reportedHazard}</span>
+            </p>
+          ) : null}
+          <AssessmentList label="Reported indicators" items={reportedIndicators} />
+        </AssessmentCard>
+
+        <AssessmentCard label="Evidence assessment" tone={evidencePresentation.tone}>
+          <p className="font-semibold text-white">{evidencePresentation.title}</p>
+          {evidencePresentation.detail ? <p className="mt-2">{evidencePresentation.detail}</p> : null}
+        </AssessmentCard>
+
+        <AssessmentCard label="Location & surrounding context">
+          <div className="space-y-4">
+            {geo.region ? <p><span className="font-semibold text-white">Region:</span> {geo.region}</p> : null}
+            <AssessmentList label="Nearby context" items={geo.nearbyContext} />
+            <AssessmentList label="Relevant risk factors" items={geo.riskFactors} />
+            {!geo.region && normalizeArray(geo.nearbyContext).length === 0 && normalizeArray(geo.riskFactors).length === 0 ? <p>No additional location context is available.</p> : null}
+          </div>
+        </AssessmentCard>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <AssessmentCard label="Related reports">
+            <p className="font-semibold text-white">
+              {relatedReports.length > 0
+                ? `${relatedReports.length} related report${relatedReports.length === 1 ? "" : "s"} found.`
+                : "No related reports found."}
+            </p>
+            {relatedReports.length > 0 ? (
+              <ul className="mt-3 space-y-3">
+                {relatedReports.map((relatedReport, index) => {
+                  const summary = relatedReport.reportSummary;
+                  const relatedReportId = summary?.id || relatedReport.reportId;
+
+                  if (!relatedReportId) {
+                    return null;
+                  }
+
+                  if (!summary) {
+                    return (
+                      <li key={`related-unresolved-${index}`} className="rounded-xl border border-white/5 bg-white/3 p-3 text-sm text-slate-400">
+                        A related report was identified, but its details could not be loaded.
+                      </li>
+                    );
+                  }
+
+                  return (
+                    <li key={relatedReportId} className="rounded-xl border border-white/5 bg-white/3 p-3">
+                      <p className="font-semibold text-white">{summary.title || "Untitled report"}</p>
+                      <p className="mt-1 text-sm text-slate-400">{summary.locationName || "Location not provided"}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <StatusBadge status={summary.status} />
+                        <span className="text-xs text-slate-500">{formatDate(summary.createdAt)}</span>
+                      </div>
+                      <Link className="mt-3 inline-flex text-sm font-semibold text-primary-light underline" to={`/authority/reports/${relatedReportId}`}>
+                        View report
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+          </AssessmentCard>
+
+          <AssessmentCard label="Previous related reports">
+            <p className="font-semibold text-white">
+              {historical.previousIncidents > 0
+                ? `${historical.previousIncidents} previous related incident${historical.previousIncidents === 1 ? "" : "s"} found.`
+                : "No previous related incidents found."}
+            </p>
+            {historical.recurring ? (
+              <p className="mt-2">Previous related incidents suggest a recurring pattern.</p>
+            ) : null}
+          </AssessmentCard>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <AssessmentCard label="Initial priority">
+            <p className="font-semibold text-white">{getPriorityLabel(intelligence)}</p>
+            <p className="mt-2 text-slate-400">This is an initial system assessment and does not replace your judgment.</p>
+          </AssessmentCard>
+
+          <AssessmentCard label="Suggested next step">
+            <p>{suggestedNextStep}</p>
+            <p className="mt-2 text-slate-400">
+              This suggested next step is advisory only and does not make the final authority decision.
+            </p>
+          </AssessmentCard>
+        </div>
+
+        <AssessmentCard label="Assessment notes">
+          <p>{assessmentNotes}</p>
+        </AssessmentCard>
+      </div>
+    </section>
+  );
+};
+
 const ReadOnlyMap = ({ latitude, longitude, locationName }) => {
   const hasValidCoordinates = isValidLatitude(latitude) && isValidLongitude(longitude);
-  const center = hasValidCoordinates ? [latitude, longitude] : [20.5937, 78.9629];
+  const center = hasValidCoordinates ? [latitude, longitude] : indiaMapCenter;
 
   if (!hasValidCoordinates) {
     return (
@@ -137,13 +337,9 @@ const ReadOnlyMap = ({ latitude, longitude, locationName }) => {
   return (
     <div className="space-y-4">
       <div className="overflow-hidden rounded-2xl border border-white/5 bg-[#02070e]">
-        <MapContainer center={center} zoom={14} scrollWheelZoom={false} className="h-[360px] w-full">
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+        <IndiaMap center={center} zoom={hasValidCoordinates ? 14 : indiaMapMinZoom} scrollWheelZoom={false} className="h-[360px] w-full">
           <Marker position={center} icon={reportMarkerIcon} />
-        </MapContainer>
+        </IndiaMap>
       </div>
       <div className="rounded-2xl border border-white/5 bg-white/3 p-4 text-sm text-slate-300">
         <div className="font-semibold text-white">{locationName || "Selected coordinates"}</div>
@@ -250,15 +446,21 @@ const AuthorityActionPanel = ({ report, onSubmitAction, isSubmitting }) => {
               <div>
                 <h3 className="text-xl font-semibold text-white">
                   {dialogAction === "verify"
-                    ? "Verify this incident?"
+                    ? "Verify this report?"
                     : dialogAction === "reject"
-                      ? "Reject this incident?"
+                      ? "Reject this report?"
                       : dialogAction === "resolve"
-                        ? "Resolve this incident?"
-                        : "Close this incident?"}
+                        ? "Mark this report as resolved?"
+                        : "Close this report?"}
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-slate-400">
-                  Remarks are required for this action and will be saved with the report history.
+                  {dialogAction === "resolve"
+                    ? "Add a short note explaining the resolution. This note will be saved with the report history."
+                    : dialogAction === "verify"
+                      ? "Add a short note confirming why this report can be verified. This note will be saved with the report history."
+                      : dialogAction === "reject"
+                        ? "Add a short reason for rejecting this report. This note will be saved with the report history."
+                        : "Add a short note explaining why this report is being closed. This note will be saved with the report history."}
                 </p>
               </div>
               <button
@@ -273,7 +475,7 @@ const AuthorityActionPanel = ({ report, onSubmitAction, isSubmitting }) => {
 
             <label className="mt-5 block">
               <span className="text-sm font-semibold text-slate-200">
-                {dialogAction === "reject" ? "Rejection reason" : "Remarks"}
+                {dialogAction === "reject" ? "Rejection reason" : dialogAction === "resolve" ? "Resolution note" : dialogAction === "verify" ? "Verification note" : "Closing note"}
               </span>
               <textarea
                 rows="5"
@@ -283,7 +485,7 @@ const AuthorityActionPanel = ({ report, onSubmitAction, isSubmitting }) => {
                   setRemarksError("");
                 }}
                 className="mt-2 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
-                placeholder={dialogAction === "reject" ? "Explain why this report is being rejected." : "Add remarks for this authority action."}
+                placeholder={dialogAction === "reject" ? "Explain why this report is being rejected..." : dialogAction === "resolve" ? "Add a note about how this report was resolved..." : dialogAction === "verify" ? "Add a note about why this report was verified..." : "Add a note about why this report was closed..."}
               />
               {remarksError ? <span className="mt-2 block text-sm text-red-300">{remarksError}</span> : null}
             </label>
@@ -302,7 +504,7 @@ const AuthorityActionPanel = ({ report, onSubmitAction, isSubmitting }) => {
                 disabled={isSubmitting}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-glow-primary transition hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isSubmitting ? "Processing..." : "Confirm Action"}
+                {isSubmitting ? "Saving..." : dialogAction === "resolve" ? "Confirm Resolution" : dialogAction === "verify" ? "Confirm Verification" : dialogAction === "reject" ? "Confirm Rejection" : "Confirm Closure"}
                 <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
@@ -503,6 +705,10 @@ const ReportDetailsPage = ({ variant = "citizen" }) => {
                   <p className="mt-2 text-sm leading-6 text-slate-300">{report.description || "No description provided."}</p>
                 </div>
                 <div className="rounded-2xl border border-white/5 bg-white/3 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Hazard type</p>
+                  <p className="mt-2 text-sm font-semibold text-white">{report.hazardType || report.intelligence?.hazardType || "Not specified"}</p>
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/3 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Current status</p>
                   <p className="mt-2 text-sm font-semibold text-white">{humanizeStatus(report.status)}</p>
                   <p className="mt-2 text-sm leading-6 text-slate-400">Last updated {formatDate(report.updatedAt || report.createdAt)}</p>
@@ -517,6 +723,10 @@ const ReportDetailsPage = ({ variant = "citizen" }) => {
                 </div>
               </div>
             </section>
+
+            {variant === "authority" ? (
+              <IncidentAssessment intelligence={report.intelligence} reportDescription={report.description} />
+            ) : null}
 
             <section className="glass-panel card-glow rounded-3xl border border-white/5 p-6 shadow-card-glow sm:p-7">
               <div className="mb-5 flex items-start justify-between gap-4">

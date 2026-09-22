@@ -5,6 +5,7 @@ export {
 	createReport,
 	getCommunityReport,
 	getCommunityReports,
+	getPublicHotspots,
 	getCitizenReports,
 	getReport,
 	getReports,

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
+import { Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapPinned, LocateFixed, Loader2 } from "lucide-react";
+import { IndiaMap } from "@/components/common/IndiaMap";
+import { indiaMapCenter, indiaMapMinZoom } from "@/components/common/indiaMapConfig";
 import {
   buildReverseGeocodeLabel,
   clampLatitude,
@@ -11,8 +13,6 @@ import {
   isValidLatitude,
   isValidLongitude,
 } from "@/features/citizen/locationUtils";
-
-const defaultCenter = [20.5937, 78.9629];
 
 const markerIcon = new L.Icon({
   iconUrl: new URL("leaflet/dist/images/marker-icon.png", import.meta.url).href,
@@ -97,7 +97,7 @@ const LocationPicker = ({
   onCoordinatesChange,
   onLocationNameChange,
 }) => {
-  const [zoom, setZoom] = useState(4);
+  const [zoom, setZoom] = useState(indiaMapMinZoom);
   const [geolocationStatus, setGeolocationStatus] = useState("");
   const [geolocationLoading, setGeolocationLoading] = useState(false);
   const [reverseGeocodeMessage, setReverseGeocodeMessage] = useState("");
@@ -196,7 +196,7 @@ const LocationPicker = ({
   const latitudeInputKey = Number.isFinite(latitude) ? `latitude-${latitude}` : "latitude-empty";
   const longitudeInputKey = Number.isFinite(longitude) ? `longitude-${longitude}` : "longitude-empty";
   const mapKey = hasValidCoordinates ? `map-${latitude}-${longitude}` : "map-default";
-  const mapCenter = hasValidCoordinates ? [latitude, longitude] : defaultCenter;
+  const mapCenter = hasValidCoordinates ? [latitude, longitude] : indiaMapCenter;
 
   return (
     <section className="glass-panel card-glow rounded-3xl border border-white/5 p-4 shadow-card-glow sm:p-5">
@@ -217,14 +217,10 @@ const LocationPicker = ({
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-white/5 bg-[#02070e]">
-        <MapContainer key={mapKey} center={mapCenter} zoom={zoom} scrollWheelZoom className="h-[420px] w-full">
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+        <IndiaMap key={mapKey} center={mapCenter} zoom={zoom} className="h-[420px] w-full">
           <MapEvents onSelect={handleMapSelect} />
           <DraggableMarker position={markerPosition} onDragEnd={handleMarkerDragEnd} />
-        </MapContainer>
+        </IndiaMap>
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">

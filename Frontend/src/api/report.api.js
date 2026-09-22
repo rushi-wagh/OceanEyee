@@ -22,6 +22,11 @@ const getReports = async (params = {}) => {
 
 const getCommunityReports = async () => getReports({ scope: "public" });
 
+const getPublicHotspots = async () => {
+  const response = await api.get("/api/reports/hotspots");
+  return response.data;
+};
+
 const getCommunityReport = async (reportId) => getReport(reportId, { scope: "public" });
 
 const submitAuthorityAction = async (reportId, action, remarks) => {
@@ -58,6 +63,7 @@ export {
   createReport,
   getCommunityReport,
   getCommunityReports,
+  getPublicHotspots,
   getCitizenReports,
   getReport,
   getReports,

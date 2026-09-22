@@ -1,6 +1,25 @@
 import { prisma } from "../utils/db.js";
 import { ApiError } from "../utils/ApiError.js";
 
+const privateIntelligenceSelect = {
+  id: true,
+  reportId: true,
+  hazardType: true,
+  summary: true,
+  confidence: true,
+  visionAnalysis: true,
+  nlpAnalysis: true,
+  geoAnalysis: true,
+  duplicateAnalysis: true,
+  evidenceConsistency: true,
+  priorityScore: true,
+  recommendation: true,
+  reasoning: true,
+  processingStatus: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
 const reportInclude = {
   citizen: {
     select: {
@@ -18,7 +37,9 @@ const reportInclude = {
     },
   },
   images: true,
-  intelligence: true,
+  intelligence: {
+    select: privateIntelligenceSelect,
+  },
   authorityActions: {
     include: {
       authority: {
@@ -72,6 +93,58 @@ const generateReportNumber = () => {
   return `OIQ-${date}-${time}-${random}`;
 };
 
+const attachRelatedReportSummaries = async (report) => {
+  const matchedReports = report?.intelligence?.duplicateAnalysis?.matchedReports;
+
+  if (!Array.isArray(matchedReports) || matchedReports.length === 0) {
+    return report;
+  }
+
+  const relatedReportIds = [
+    ...new Set(
+      matchedReports
+        .map((entry) => entry?.reportId)
+        .filter((reportId) => typeof reportId === "string" && reportId.trim()),
+    ),
+  ];
+
+  if (relatedReportIds.length === 0) {
+    return report;
+  }
+
+  const relatedReports = await prisma.report.findMany({
+    where: {
+      id: {
+        in: relatedReportIds,
+      },
+    },
+    select: {
+      id: true,
+      reportNumber: true,
+      title: true,
+      locationName: true,
+      status: true,
+      createdAt: true,
+    },
+  });
+
+  const relatedReportById = new Map(relatedReports.map((entry) => [entry.id, entry]));
+
+  return {
+    ...report,
+    intelligence: {
+      ...report.intelligence,
+      duplicateAnalysis: {
+        ...report.intelligence.duplicateAnalysis,
+        matchedReports: matchedReports.map((entry) => ({
+          ...entry,
+          reportSummary: relatedReportById.get(entry.reportId) || null,
+        })),
+      },
+    },
+  };
+};
+
 const getReportById = async (reportId) => {
   const report = await prisma.report.findUnique({
     where: {
@@ -84,7 +157,7 @@ const getReportById = async (reportId) => {
     throw new ApiError(404, "Report not found");
   }
 
-  return report;
+  return attachRelatedReportSummaries(report);
 };
 
 const getPublicReportById = async (reportId) => {

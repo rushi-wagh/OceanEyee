@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, FileText, Search } from "lucide-react";
 import { Link } from "react-router-dom";
+import { getPublicHotspots } from "@/api/report.api";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { CardSkeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { humanizeStatus } from "@/components/ui/statusUtils";
+import { CommunityReportsMap } from "@/features/community/CommunityReportsMap";
 import { useReportStore } from "@/store/reportStore";
 
 const formatDate = (value) => {
@@ -61,6 +63,9 @@ const CommunityReportsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [sortOrder, setSortOrder] = useState("newest");
+  const [hotspots, setHotspots] = useState([]);
+  const [isLoadingHotspots, setIsLoadingHotspots] = useState(true);
+  const [hotspotError, setHotspotError] = useState("");
 
   const fetchCommunityReports = useReportStore((state) => state.fetchCommunityReports);
   const communityReports = useReportStore((state) => state.communityReports);
@@ -71,6 +76,36 @@ const CommunityReportsPage = () => {
   useEffect(() => {
     void fetchCommunityReports();
   }, [fetchCommunityReports]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchHotspots = async () => {
+      setIsLoadingHotspots(true);
+      setHotspotError("");
+
+      try {
+        const response = await getPublicHotspots();
+        if (isMounted) {
+          setHotspots(response);
+        }
+      } catch (requestError) {
+        if (isMounted) {
+          setHotspotError(requestError?.message || "Unable to load public hotspots.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingHotspots(false);
+        }
+      }
+    };
+
+    void fetchHotspots();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const reports = useMemo(() => normalizeReports(communityReports), [communityReports]);
 
@@ -166,6 +201,13 @@ const CommunityReportsPage = () => {
             </label>
           </div>
         </section>
+
+        <CommunityReportsMap
+          reports={reports}
+          hotspots={hotspots}
+          isLoading={isLoadingHotspots || isLoading}
+          error={hotspotError}
+        />
 
         {isLoading ? (
           <section className="grid gap-4">

@@ -3,7 +3,7 @@ import { uploadReportImages } from "../services/media.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
-import { processIncidentIntelligence } from "../services/incident.service.js";
+import { processIncidentIntelligence } from "../intelligence/incident.service.js";
 import { getSingleReport } from "../services/report.service.js";
 
 const uploadImages = asyncHandler(async (req, res) => {

@@ -218,10 +218,7 @@ const AuthorityDashboard = () => {
             </div>
 
             <div className="flex flex-col items-start gap-3 sm:items-end">
-              <div className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/4 px-4 py-3 text-sm font-semibold text-slate-100">
-                <ShieldAlert className="h-4 w-4 text-primary-light" aria-hidden="true" />
-                Review queue active
-              </div>
+              
               <button
                 type="button"
                 onClick={logout}

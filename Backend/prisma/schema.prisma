@@ -74,6 +74,7 @@ model IncidentIntelligence {
   geoAnalysis        Json?
   embedding          Json?
   duplicateAnalysis  Json?
+  evidenceConsistency Json?
   priorityScore      Int?
   recommendation     String?
   reasoning          String?
