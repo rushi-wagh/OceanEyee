@@ -1,7 +1,7 @@
 import { client } from "../utils/openrouter.js";
 import { ApiError } from "../utils/ApiError.js";
 
-const MODEL_NAME = "inclusionai/ling-3.0-flash-vl:free";
+const MODEL_NAME = "dots-studio/dots-3-note-preview:free";
 
 const RECOMMENDATION_PROMPT = `
 You are an advisory assistant for OceanEye authorities.
